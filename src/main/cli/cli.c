@@ -58,11 +58,16 @@ bool cliMode = false;
 #include "config/config_eeprom.h"
 #include "config/feature.h"
 
+#ifdef USE_GYRO_IMUF9001
+#include "drivers/accgyro/accgyro_imuf9001.h"
+#endif
+
 #include "drivers/accgyro/accgyro.h"
 #include "drivers/adc.h"
 #include "drivers/buf_writer.h"
 #include "drivers/bus_spi.h"
 #include "drivers/dma.h"
+#include "drivers/dma_spi.h"
 #include "drivers/dma_reqmap.h"
 #include "drivers/dshot.h"
 #include "drivers/dshot_command.h"
@@ -124,6 +129,10 @@ bool cliMode = false;
 #include "msp/msp.h"
 #include "msp/msp_box.h"
 #include "msp/msp_protocol.h"
+
+#ifdef MSP_OVER_CLI
+#include "msp/msp_serial.h"
+#endif
 
 #include "osd/osd.h"
 
@@ -207,8 +216,19 @@ static bool signatureUpdated = false;
 #endif
 #endif // USE_BOARD_INFO
 
+#ifdef USE_GYRO_IMUF9001
+#define IMUF_CUSTOM_BUFF_LENGTH 26000
+static   uint8_t  imuf_custom_buff[IMUF_CUSTOM_BUFF_LENGTH];
+static   uint32_t imuf_buff_ptr = 0;
+static   uint32_t imuf_checksum = 0;
+static   int      imuf_bin_safe = 0;
+
+#endif
+
 static const char* const emptyName = "-";
 static const char* const emptyString = "";
+
+int cliSmartMode = 0;
 
 #if !defined(USE_CUSTOM_DEFAULTS)
 #define CUSTOM_DEFAULTS_START ((char*)0)
@@ -341,7 +361,15 @@ static void cliPrintInternal(bufWriter_t *writer, const char *str)
 {
     if (writer) {
         while (*str) {
-            bufWriterAppend(writer, *str++);
+            if(cliSmartMode)  {
+                if(*str == '\r') {
+                    (void)(*str++);
+                } else {
+                    bufWriterAppend(cliWriter, *str++);
+                }
+            } else {
+                bufWriterAppend(cliWriter, *str++);
+            }
         }
         cliWriterFlushInternal(writer);
     }
@@ -360,6 +388,10 @@ void cliPrint(const char *str)
 void cliPrintLinefeed(void)
 {
     cliPrint("\r\n");
+    if(cliSmartMode) {
+        bufWriterFlush(cliWriter);
+    }
+
 }
 
 void cliPrintLine(const char *str)
@@ -3552,6 +3584,172 @@ static void cliBootloader(const char *cmdName, char *cmdline)
     cliRebootEx(rebootTarget);
 }
 
+static void cliDebug(char *cmdline)
+{
+    UNUSED(cmdline);
+
+    for (int x=0;x<4;x++)
+    {
+        cliPrintLinef("DEBUG %d:%d", x, debug[x]);
+    }
+}
+
+#ifdef MSP_OVER_CLI
+static void hex2byte(char *string, uint8_t *output)
+{
+    char tempBuff[3];
+    tempBuff[0] = string[0];
+    tempBuff[1] = string[1];
+    tempBuff[2] = 0;
+    *output = (uint8_t)strtol(tempBuff, NULL, 16);
+}
+#endif
+
+#ifdef MSP_OVER_CLI
+static void hex2byte(char *string, uint8_t *output)
+{
+    char tempBuff[3];
+    tempBuff[0] = string[0];
+    tempBuff[1] = string[1];
+    tempBuff[2] = 0;
+    *output = (uint8_t)strtol(tempBuff, NULL, 16);
+}
+#endif
+
+#ifdef USE_GYRO_IMUF9001
+
+static void cliImufBootloaderMode(char *cmdline)
+{
+    (void)(cmdline);
+    if(imufBootloader()) {
+        cliPrintLine("BOOTLOADER");
+    } else {
+        cliPrintLine("FAIL");
+    }
+}
+
+
+static void cliImufLoadBin(char *cmdline)
+{
+    #define TEMP_BUFF 256
+    uint32_t dataSize;
+    uint8_t output;
+    uint8_t dataBuff[TEMP_BUFF] = {0,};
+    uint32_t x;
+
+    if(cmdline[0] == '!') {
+        imuf_bin_safe = 1;
+        imuf_buff_ptr = 0;
+        imuf_checksum = 0;
+        memset(imuf_custom_buff, 0, IMUF_CUSTOM_BUFF_LENGTH);
+        cliPrintLine("SUCCESS");
+    } else if(cmdline[0] == '.') {
+        cliPrintLinef("%d", imuf_buff_ptr);
+    } else if(cmdline[0] == 'c') {
+        cliPrintLinef("%d", imuf_checksum);
+    }
+    else if(cmdline[0] == 'l') {
+        if (imuf_bin_safe) {
+            //get the datasize
+            hex2byte(&cmdline[1], &output);
+            dataSize  = ((output & 0xff) << 0 );
+            hex2byte(&cmdline[3], &output);
+            dataSize += ((output & 0xff) << 8 );
+            hex2byte(&cmdline[5], &output);
+            dataSize += ((output & 0xff) << 16);
+            hex2byte(&cmdline[7], &output);
+            dataSize += ((output & 0xff) << 24);
+
+            if(dataSize < TEMP_BUFF) {
+                //fill the temp buffer
+                for(x=0; x< dataSize; x++) {
+                    hex2byte(&cmdline[(x*2)+9], &output);
+                    dataBuff[x] = output;
+                    imuf_checksum += output;
+                    //cliPrintLinef("out:%d:%d:%d:%d", dataSize, x, (x*2)+9, output, checksum);
+                }
+                if ( (imuf_buff_ptr+dataSize) < IMUF_CUSTOM_BUFF_LENGTH ) {
+                    memcpy(imuf_custom_buff+imuf_buff_ptr, dataBuff, dataSize);
+                    imuf_buff_ptr += dataSize;
+                    cliPrintLine("LOADED");
+                } else {
+                    cliPrintLine("WOAH!");
+                }
+            } else {
+                cliPrintLine("CRAP!");
+            }
+        } else {
+            cliPrintLine("PFFFT!");
+        }
+    }
+}
+
+static void cliImufFlashBin(char *cmdline)
+{
+    (void)(cmdline);
+    if (imufUpdate(imuf_custom_buff, imuf_buff_ptr)) {
+        cliPrintLine("SUCCESS");
+        bufWriterFlush(cliWriter);
+        delay(5000);
+
+        *cliBuffer = '\0';
+        bufferIndex = 0;
+        cliMode = 0;
+        // incase a motor was left running during motortest, clear it here
+        mixerResetDisarmedMotors();
+        cliReboot();
+
+        cliWriter = NULL;
+    }
+}
+#endif
+
+#ifdef MSP_OVER_CLI
+sbuf_t buft;
+uint8_t bufPtr[256];
+
+void cliMsp(char *cmdline) {
+    int len = strlen(cmdline);
+    if (len == 0) {
+        cliPrintLine("No MSP command present");
+
+        return;
+    } else {
+        uint8_t mspCommand = atoi(cmdline);
+        uint8_t start = 2;
+        if (mspCommand > 99) {
+            start = 4;
+        } else if (mspCommand > 9) {
+            start= 3;
+        }
+        uint8_t inBuff[len];
+        uint8_t output;
+        for (int i = 0; i < len; i++) {
+            hex2byte(&cmdline[(i*2) + start], &output);
+            inBuff[i] = output;
+        }
+        sbuf_t inBuf = {.ptr = inBuff, .end = &inBuff[len-1]};
+        //TODO need to fill inPtr with the rest of the bytes from the command line
+
+        buft.ptr = buft.end = bufPtr;
+        if (mspCommonProcessOutCommand(mspCommand, &buft, NULL) || mspProcessOutCommand(mspCommand, &buft)
+          || mspCommonProcessInCommand(mspCommand, &inBuf, NULL) > -1 || mspProcessInCommand(mspCommand, &inBuf) > -1)
+        {
+
+            bufWriterAppend(cliWriter, '.');                 //"." is success
+            bufWriterAppend(cliWriter, mspCommand);          //msp command sent
+            bufWriterAppend(cliWriter, inBuf.ptr - inBuf.end);                  //msp command sent
+            bufWriterAppend(cliWriter, buft.ptr - buft.end); //number of chars
+
+            while (buft.end <= buft.ptr)
+                bufWriterAppend(cliWriter, *(buft.end)++); //send data
+        } else {
+            bufWriterAppend(cliWriter, '!'); //"!" is failure
+        }
+    }
+}
+#endif
+
 static void cliExit(const char *cmdName, char *cmdline)
 {
     UNUSED(cmdName);
@@ -4716,7 +4914,7 @@ static void cliStatus(const char *cmdName, char *cmdline)
     }
     cliPrintLinefeed();
 
-#if defined(USE_SENSOR_NAMES)
+#if defined(USE_SENSOR_NAMES) && !defined(USE_GYRO_IMUF9001)
     const uint32_t detectedSensorsMask = sensorsMask();
     for (uint32_t i = 0; ; i++) {
         if (sensorTypeNames[i] == NULL) {
@@ -4738,6 +4936,12 @@ static void cliStatus(const char *cmdName, char *cmdline)
         }
     }
     cliPrintLinefeed();
+#else
+    #if defined(USE_GYRO_IMUF9001)
+    UNUSED(sensorHardwareNames);
+    UNUSED(sensorTypeNames);
+    cliPrintf(" | IMU-F Version: %lu", imufCurrentVersion);
+    #endif
 #endif /* USE_SENSOR_NAMES */
 
 #if defined(USE_OSD)
@@ -4820,8 +5024,8 @@ static void cliTasks(const char *cmdName, char *cmdline)
         if (taskInfo.isEnabled) {
             int taskFrequency = taskInfo.averageDeltaTimeUs == 0 ? 0 : lrintf(1e6f / taskInfo.averageDeltaTimeUs);
             cliPrintf("%02d - (%15s) ", taskId, taskInfo.taskName);
-            const int maxLoad = taskInfo.maxExecutionTimeUs == 0 ? 0 :(taskInfo.maxExecutionTimeUs * taskFrequency + 5000) / 1000;
-            const int averageLoad = taskInfo.averageExecutionTimeUs == 0 ? 0 : (taskInfo.averageExecutionTimeUs * taskFrequency + 5000) / 1000;
+            const int maxLoad = taskInfo.maxExecutionTimeUs == 0 ? 0 :(taskInfo.maxExecutionTimeUs * taskFrequency) / 1000;
+            const int averageLoad = taskInfo.averageExecutionTimeUs == 0 ? 0 : (taskInfo.averageExecutionTimeUs * taskFrequency) / 1000;
             if (taskId != TASK_SERIAL) {
                 maxLoadSum += maxLoad;
                 averageLoadSum += averageLoad;
@@ -4864,6 +5068,10 @@ static void printVersion(const char *cmdName, bool printBoardInfo)
         shortGitRevision,
         MSP_API_VERSION_STRING
     );
+
+#ifdef USE_GYRO_IMUF9001
+    cliPrintLinef("# IMU-F Version: %lu", imufCurrentVersion);
+#endif
 
 #ifdef FEATURE_CUT_LEVEL
     cliPrintLinef(" / FEATURE CUT LEVEL %d", FEATURE_CUT_LEVEL);
@@ -6363,6 +6571,7 @@ const clicmd_t cmdTable[] = {
     CLI_COMMAND_DEF("beeper", "enable/disable beeper for a condition", "list\r\n"
         "\t<->[name]", cliBeeper),
 #endif // USE_BEEPER
+
 #if defined(USE_RX_BIND)
     CLI_COMMAND_DEF("bind_rx", "initiate binding for RX SPI or SRXL2", NULL, cliRxBind),
 #endif
@@ -6405,6 +6614,15 @@ const clicmd_t cmdTable[] = {
 #ifdef USE_ESCSERIAL
     CLI_COMMAND_DEF("escprog", "passthrough esc to serial", "<mode [sk/bl/ki/cc]> <index>", cliEscPassthrough),
 #endif
+#ifdef USE_GYRO_IMUF9001
+    CLI_COMMAND_DEF("imufbootloader", NULL, NULL, cliImufBootloaderMode),
+    CLI_COMMAND_DEF("imufloadbin", NULL, NULL, cliImufLoadBin),
+    CLI_COMMAND_DEF("imufflashbin", NULL, NULL, cliImufFlashBin),
+#endif
+    CLI_COMMAND_DEF("debug", NULL, NULL, cliDebug), //NEEDED?
+#ifdef MSP_OVER_CLI
+    CLI_COMMAND_DEF("msp", NULL, NULL, cliMsp),
+#endif
     CLI_COMMAND_DEF("exit", NULL, NULL, cliExit),
     CLI_COMMAND_DEF("feature", "configure features",
         "list\r\n"
@@ -6424,6 +6642,12 @@ const clicmd_t cmdTable[] = {
 #endif
 #if defined(USE_GYRO_REGISTER_DUMP) && !defined(SIMULATOR_BUILD)
     CLI_COMMAND_DEF("gyroregisters", "dump gyro config registers contents", NULL, cliDumpGyroRegisters),
+#endif
+#ifdef USE_GYRO_IMUF9001
+    CLI_COMMAND_DEF("reportimuferrors", "report imu-f comm errors", NULL, cliReportImufErrors),
+#endif
+#ifdef MSD_ADDRESS
+    CLI_COMMAND_DEF("msd", "boot into USB drive mode to download log files", NULL, cliMsd), //NEEDED?
 #endif
     CLI_COMMAND_DEF("help", "display command help", "[search string]", cliHelp),
 #ifdef USE_LED_STRIP_STATUS_MODE

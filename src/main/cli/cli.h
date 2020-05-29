@@ -23,6 +23,7 @@
 #include <stdbool.h>
 
 extern bool cliMode;
+extern int cliSmartMode;
 
 void cliProcess(void);
 bool hasCustomDefaults(void);
