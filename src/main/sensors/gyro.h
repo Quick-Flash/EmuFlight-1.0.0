@@ -48,6 +48,17 @@ typedef union gyroLowpassFilter_u {
     biquadFilter_t biquadFilterState;
 } gyroLowpassFilter_t;
 
+#if defined(USE_GYRO_IMUF9001)
+typedef enum {
+    IMUF_RATE_32K = 0,
+    IMUF_RATE_16K = 1,
+    IMUF_RATE_8K = 2,
+    IMUF_RATE_4K = 3,
+    IMUF_RATE_2K = 4,
+    IMUF_RATE_1K = 5
+} imufRate_e;
+#endif
+
 typedef enum gyroDetectionFlags_e {
     GYRO_NONE_MASK = 0,
     GYRO_1_MASK = BIT(0),
@@ -160,10 +171,13 @@ enum {
 };
 
 typedef struct gyroConfig_s {
+    uint8_t  gyro_align;                       // gyro alignment
     uint8_t  gyroMovementCalibrationThreshold; // people keep forgetting that moving model while init results in wrong gyro offsets. and then they never reset gyro. so this is now on by default.
     uint8_t  gyro_hardware_lpf;                // gyro DLPF setting
+    uint8_t  gyro_32khz_hardware_lpf;          // gyro 32khz DLPF setting
 
     uint8_t  gyro_high_fsr;
+    uint8_t  gyro_use_32khz;
     uint8_t  gyro_to_use;
 
     uint16_t gyro_lowpass_hz;
@@ -215,6 +229,10 @@ typedef struct gyroConfig_s {
 PG_DECLARE(gyroConfig_t, gyroConfig);
 
 void gyroUpdate(void);
+#ifdef USE_DMA_SPI_DEVICE
+void gyroDmaSpiFinishRead(void);
+void gyroDmaSpiStartRead(void);
+#endif
 void gyroFiltering(timeUs_t currentTimeUs);
 bool gyroGetAccumulationAverage(float *accumulation);
 void gyroStartCalibration(bool isFirstArmingCalibration);

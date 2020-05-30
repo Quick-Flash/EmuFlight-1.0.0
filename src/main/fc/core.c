@@ -44,6 +44,7 @@
 
 #include "drivers/dshot.h"
 #include "drivers/dshot_command.h"
+#include "drivers/dma_spi.h"
 #include "drivers/light_led.h"
 #include "drivers/motor.h"
 #include "drivers/sound_beeper.h"
@@ -1271,6 +1272,9 @@ FAST_CODE void taskFiltering(timeUs_t currentTimeUs)
 // Function for loop trigger
 FAST_CODE void taskMainPidLoop(timeUs_t currentTimeUs)
 {
+#ifdef USE_DMA_SPI_DEVICE
+    dmaSpiDeviceDataReady = false;
+#endif
 
 #if defined(SIMULATOR_BUILD) && defined(SIMULATOR_GYROPID_SYNC)
     if (lockMainPID() != 0) return;

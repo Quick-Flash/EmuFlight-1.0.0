@@ -19,6 +19,7 @@
  */
 
 #include <stdbool.h>
+#include <string.h>
 #include <stdint.h>
 #include <math.h>
 
@@ -55,6 +56,9 @@
 
 #include "rc.h"
 
+#ifdef USE_GYRO_IMUF9001
+    volatile bool isSetpointNew;
+#endif
 
 typedef float (applyRatesFn)(const int axis, float rcCommandf, const float rcCommandfAbs);
 
@@ -730,6 +734,10 @@ FAST_CODE void processRcCommand(void)
             calculateSetpointRate(axis);
         }
 
+        #ifdef USE_GYRO_IMUF9001
+        isSetpointNew = 1;
+        #endif
+        
         DEBUG_SET(DEBUG_RC_INTERPOLATION, 3, setpointRate[0]);
 
         // Scaling of AngleRate to camera angle (Mixing Roll and Yaw)
