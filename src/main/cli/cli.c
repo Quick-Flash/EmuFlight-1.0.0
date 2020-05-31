@@ -3584,16 +3584,6 @@ static void cliBootloader(const char *cmdName, char *cmdline)
     cliRebootEx(rebootTarget);
 }
 
-static void cliDebug(char *cmdline)
-{
-    UNUSED(cmdline);
-
-    for (int x=0;x<4;x++)
-    {
-        cliPrintLinef("DEBUG %d:%d", x, debug[x]);
-    }
-}
-
 #ifdef MSP_OVER_CLI
 static void hex2byte(char *string, uint8_t *output)
 {
@@ -6619,7 +6609,6 @@ const clicmd_t cmdTable[] = {
     CLI_COMMAND_DEF("imufloadbin", NULL, NULL, cliImufLoadBin),
     CLI_COMMAND_DEF("imufflashbin", NULL, NULL, cliImufFlashBin),
 #endif
-    CLI_COMMAND_DEF("debug", NULL, NULL, cliDebug), //NEEDED?
 #ifdef MSP_OVER_CLI
     CLI_COMMAND_DEF("msp", NULL, NULL, cliMsp),
 #endif
@@ -6645,9 +6634,6 @@ const clicmd_t cmdTable[] = {
 #endif
 #ifdef USE_GYRO_IMUF9001
     CLI_COMMAND_DEF("reportimuferrors", "report imu-f comm errors", NULL, cliReportImufErrors),
-#endif
-#ifdef MSD_ADDRESS
-    CLI_COMMAND_DEF("msd", "boot into USB drive mode to download log files", NULL, cliMsd), //NEEDED?
 #endif
     CLI_COMMAND_DEF("help", "display command help", "[search string]", cliHelp),
 #ifdef USE_LED_STRIP_STATUS_MODE
