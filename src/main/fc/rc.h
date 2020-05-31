@@ -58,3 +58,6 @@ float getRcCurveSlope(int axis, float deflection);
 void updateRcRefreshRate(timeUs_t currentTimeUs);
 uint16_t getCurrentRxRefreshRate(void);
 float rateDynamics(float rcCommand, int axis);
+float getThrottlePIDAttenuationKp(void);
+float getThrottlePIDAttenuationKi(void);
+float getThrottlePIDAttenuationKd(void);

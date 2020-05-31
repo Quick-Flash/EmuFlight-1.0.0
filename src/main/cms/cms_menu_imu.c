@@ -283,8 +283,6 @@ static const OSD_Entry cmsx_menuRateProfileEntries[] =
 
     { "THR MID",     OME_UINT8,  NULL, &(OSD_UINT8_t) { &rateProfile.thrMid8,           0,  100,  1}, 0 },
     { "THR EXPO",    OME_UINT8,  NULL, &(OSD_UINT8_t) { &rateProfile.thrExpo8,          0,  100,  1}, 0 },
-    { "THRPID ATT",  OME_FLOAT,  NULL, &(OSD_FLOAT_t) { &rateProfile.dynThrPID,         0,  100,  1, 10}, 0 },
-    { "TPA BRKPT",   OME_UINT16, NULL, &(OSD_UINT16_t){ &rateProfile.tpa_breakpoint, 1000, 2000, 10}, 0 },
 
     { "THR LIM TYPE",OME_TAB,    NULL, &(OSD_TAB_t)   { &rateProfile.throttle_limit_type, THROTTLE_LIMIT_TYPE_COUNT - 1, osdTableThrottleLimitType}, 0 },
     { "THR LIM %",   OME_UINT8,  NULL, &(OSD_UINT8_t) { &rateProfile.throttle_limit_percent, 25,  100,  1}, 0 },
@@ -303,6 +301,83 @@ static CMS_Menu cmsx_menuRateProfile = {
     .onDisplayUpdate = NULL,
     .entries = cmsx_menuRateProfileEntries
 };
+
+static const void *cmsx_RFTPARead(void)
+{
+    memcpy(&rateProfile, controlRateProfiles(rateProfileIndex), sizeof(controlRateConfig_t));
+
+    return 0;
+}
+
+static const void *cmsx_RFTPAWriteback(displayPort_t *pDisp, const OSD_Entry *self)
+{
+    UNUSED(pDisp);
+    UNUSED(self);
+
+    memcpy(controlRateProfilesMutable(rateProfileIndex), &rateProfile, sizeof(controlRateConfig_t));
+
+    return 0;
+}
+
+static const void *cmsx_RFTPAOnEnter(displayPort_t *pDisp)
+{
+    UNUSED(pDisp);
+
+    setProfileIndexString(rateProfileIndexString, rateProfileIndex, controlRateProfilesMutable(rateProfileIndex)->profileName);
+    cmsx_RFTPARead();
+
+    return 0;
+}
+
+static const OSD_Entry cmsx_menuRFTPAEntries[] =
+{
+    { "-- RF1 TPA --", OME_Label, NULL, rateProfileIndexString, 0 },
+    { "-- KP --", OME_Label, NULL, NULL, 0 },
+    { "0", OME_UINT8, NULL,                     &(OSD_UINT8_t)  { &rateProfile.raceflightTPA.kpAttenuationCurve[0], 0,  250,  1}, 0 },
+    { "12.5", OME_UINT8, NULL,                  &(OSD_UINT8_t)  { &rateProfile.raceflightTPA.kpAttenuationCurve[1], 0,  250,  1}, 0 },
+    { "25", OME_UINT8, NULL,                    &(OSD_UINT8_t)  { &rateProfile.raceflightTPA.kpAttenuationCurve[2], 0,  250,  1}, 0 },
+    { "37.5", OME_UINT8, NULL,                  &(OSD_UINT8_t)  { &rateProfile.raceflightTPA.kpAttenuationCurve[3], 0,  250,  1}, 0 },
+    { "50", OME_UINT8, NULL,                    &(OSD_UINT8_t)  { &rateProfile.raceflightTPA.kpAttenuationCurve[4], 0,  250,  1}, 0 },
+    { "62.5", OME_UINT8, NULL,                  &(OSD_UINT8_t)  { &rateProfile.raceflightTPA.kpAttenuationCurve[5], 0,  250,  1}, 0 },
+    { "75", OME_UINT8, NULL,                    &(OSD_UINT8_t)  { &rateProfile.raceflightTPA.kpAttenuationCurve[6], 0,  250,  1}, 0 },
+    { "87.5", OME_UINT8, NULL,                  &(OSD_UINT8_t)  { &rateProfile.raceflightTPA.kpAttenuationCurve[7], 0,  250,  1}, 0 },
+    { "100", OME_UINT8, NULL,                   &(OSD_UINT8_t)  { &rateProfile.raceflightTPA.kpAttenuationCurve[8], 0,  250,  1}, 0 },
+    { "-- KI --", OME_Label, NULL, NULL, 0 },
+    { "0", OME_UINT8, NULL,                     &(OSD_UINT8_t)  { &rateProfile.raceflightTPA.kiAttenuationCurve[0], 0,  250,  1}, 0 },
+    { "12.5", OME_UINT8, NULL,                  &(OSD_UINT8_t)  { &rateProfile.raceflightTPA.kiAttenuationCurve[1], 0,  250,  1}, 0 },
+    { "25", OME_UINT8, NULL,                    &(OSD_UINT8_t)  { &rateProfile.raceflightTPA.kiAttenuationCurve[2], 0,  250,  1}, 0 },
+    { "37.5", OME_UINT8, NULL,                  &(OSD_UINT8_t)  { &rateProfile.raceflightTPA.kiAttenuationCurve[3], 0,  250,  1}, 0 },
+    { "50", OME_UINT8, NULL,                    &(OSD_UINT8_t)  { &rateProfile.raceflightTPA.kiAttenuationCurve[4], 0,  250,  1}, 0 },
+    { "62.5", OME_UINT8, NULL,                  &(OSD_UINT8_t)  { &rateProfile.raceflightTPA.kiAttenuationCurve[5], 0,  250,  1}, 0 },
+    { "75", OME_UINT8, NULL,                    &(OSD_UINT8_t)  { &rateProfile.raceflightTPA.kiAttenuationCurve[6], 0,  250,  1}, 0 },
+    { "87.5", OME_UINT8, NULL,                  &(OSD_UINT8_t)  { &rateProfile.raceflightTPA.kiAttenuationCurve[7], 0,  250,  1}, 0 },
+    { "100", OME_UINT8, NULL,                   &(OSD_UINT8_t)  { &rateProfile.raceflightTPA.kiAttenuationCurve[8], 0,  250,  1}, 0 },
+    { "-- KD --", OME_Label, NULL, NULL, 0 },
+    { "0", OME_UINT8, NULL,                     &(OSD_UINT8_t)  { &rateProfile.raceflightTPA.kdAttenuationCurve[0], 0,  250,  1}, 0 },
+    { "12.5", OME_UINT8, NULL,                  &(OSD_UINT8_t)  { &rateProfile.raceflightTPA.kdAttenuationCurve[1], 0,  250,  1}, 0 },
+    { "25", OME_UINT8, NULL,                    &(OSD_UINT8_t)  { &rateProfile.raceflightTPA.kdAttenuationCurve[2], 0,  250,  1}, 0 },
+    { "37.5", OME_UINT8, NULL,                  &(OSD_UINT8_t)  { &rateProfile.raceflightTPA.kdAttenuationCurve[3], 0,  250,  1}, 0 },
+    { "50", OME_UINT8, NULL,                    &(OSD_UINT8_t)  { &rateProfile.raceflightTPA.kdAttenuationCurve[4], 0,  250,  1}, 0 },
+    { "62.5", OME_UINT8, NULL,                  &(OSD_UINT8_t)  { &rateProfile.raceflightTPA.kdAttenuationCurve[5], 0,  250,  1}, 0 },
+    { "75", OME_UINT8, NULL,                    &(OSD_UINT8_t)  { &rateProfile.raceflightTPA.kdAttenuationCurve[6], 0,  250,  1}, 0 },
+    { "87.5", OME_UINT8, NULL,                  &(OSD_UINT8_t)  { &rateProfile.raceflightTPA.kdAttenuationCurve[7], 0,  250,  1}, 0 },
+    { "100", OME_UINT8, NULL,                   &(OSD_UINT8_t)  { &rateProfile.raceflightTPA.kdAttenuationCurve[8], 0,  250,  1}, 0 },
+
+    { "SAVE&REBOOT",   OME_OSD_Exit, cmsMenuExit,   (void *)CMS_EXIT_SAVEREBOOT, 0},
+	  { "BACK",        OME_Back,            NULL,   NULL,             0},
+    { NULL, OME_END, NULL, NULL, 0 }
+};
+
+static CMS_Menu cmsx_RaceFlightTPA = {
+#ifdef CMS_MENU_DEBUG
+    .GUARD_text = "XRFTPA",
+    .GUARD_type = OME_MENU,
+#endif
+    .onEnter = cmsx_RFTPAOnEnter,
+    .onExit = cmsx_RFTPAWriteback,
+    .entries = cmsx_menuRFTPAEntries,
+};
+
 
 #ifdef USE_LAUNCH_CONTROL
 static uint8_t cmsx_launchControlMode;
@@ -868,6 +943,7 @@ static const OSD_Entry cmsx_menuImuEntries[] =
 
     {"RATE PROF", OME_UINT8,   cmsx_rateProfileIndexOnChange, &(OSD_UINT8_t){ &tmpRateProfileIndex, 1, CONTROL_RATE_PROFILE_COUNT, 1}, 0},
     {"RATE",      OME_Submenu, cmsMenuChange,                 &cmsx_menuRateProfile,                                         0},
+    {"RF TPA",    OME_Submenu, cmsMenuChange,                 &cmsx_RaceFlightTPA,                                           0},
 
     {"FILT GLB",  OME_Submenu, cmsMenuChange,                 &cmsx_menuFilterGlobal,                                        0},
 #if  (defined(USE_GYRO_DATA_ANALYSE) || defined(USE_DYN_LPF)) && defined(USE_EXTENDED_CMS_MENUS)

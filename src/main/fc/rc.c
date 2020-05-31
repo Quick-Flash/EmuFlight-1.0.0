@@ -99,6 +99,55 @@ enum {
 static FAST_RAM_ZERO_INIT rcSmoothingFilter_t rcSmoothingData;
 #endif // USE_RC_SMOOTHING_FILTER
 
+static float throttleLookupKp[1000];
+static float throttleLookupKi[1000];
+static float throttleLookupKd[1000];
+uint16_t currentAdjustedThrottle; // rcData[THROTTLE] shifted to 0-1000 range
+
+static void  BuildTPACurveThrottleLookupTables(void);
+
+static float ApplyAttenuationCurve (float input, uint8_t curve[], uint8_t curveSize);
+
+static void BuildTPACurveThrottleLookupTables(void)
+{
+    for (int x = 0; x <= 999; x++)
+    {
+        throttleLookupKp[x] = ApplyAttenuationCurve(((float)x / 999.0f), currentControlRateProfile->raceflightTPA.kpAttenuationCurve, ATTENUATION_CURVE_SIZE);
+        throttleLookupKi[x] = ApplyAttenuationCurve(((float)x / 999.0f), currentControlRateProfile->raceflightTPA.kiAttenuationCurve, ATTENUATION_CURVE_SIZE);
+        throttleLookupKd[x] = ApplyAttenuationCurve(((float)x / 999.0f), currentControlRateProfile->raceflightTPA.kdAttenuationCurve, ATTENUATION_CURVE_SIZE);
+    }
+}
+
+static float ApplyAttenuationCurve (float inputAttn, uint8_t curve[], uint8_t curveSize)
+{
+    // curve needs to be float'd
+    float floatCurve[curveSize];
+    for (uint8_t i = 0; i < curveSize; i++) {
+        floatCurve[i] = (float)curve[i] / 100.0f;
+    }
+
+    float attenuationValue = (inputAttn * (curveSize - 1));
+    float remainder = (float)((float)attenuationValue - (int)attenuationValue);
+    uint32_t position = (int)attenuationValue;
+
+    if (inputAttn == 1)
+        return(floatCurve[curveSize-1]);
+    else
+        return(floatCurve[position] + (((floatCurve[position+1] - floatCurve[position]) * remainder)));
+}
+
+float getThrottlePIDAttenuationKp(void) {
+    return throttleLookupKp[currentAdjustedThrottle];
+}
+
+float getThrottlePIDAttenuationKi(void) {
+    return throttleLookupKi[currentAdjustedThrottle];
+}
+
+float getThrottlePIDAttenuationKd(void) {
+    return throttleLookupKd[currentAdjustedThrottle];
+}
+
 uint32_t getRcFrameNumber()
 {
     return rcFrameNumber;
@@ -745,20 +794,11 @@ FAST_CODE_NOINLINE void updateRcCommands(void)
 {
     isRxDataNew = true;
 
-    // PITCH & ROLL only dynamic PID adjustment,  depending on throttle value
-    int32_t prop;
-    if (rcData[THROTTLE] < currentControlRateProfile->tpa_breakpoint) {
-        prop = 100;
-        throttlePIDAttenuation = 1.0f;
-    } else {
-        if (rcData[THROTTLE] < 2000) {
-            prop = 100 - (uint16_t)currentControlRateProfile->dynThrPID * (rcData[THROTTLE] - currentControlRateProfile->tpa_breakpoint) / (2000 - currentControlRateProfile->tpa_breakpoint);
-        } else {
-            prop = 100 - currentControlRateProfile->dynThrPID;
-        }
-        throttlePIDAttenuation = prop / 100.0f;
-    }
+    // rcData is 1000,2000 range, subtract 1000 and clamp between 0 and 1000 (for TPA lookup table indexing)
+    int16_t shift = rcData[THROTTLE] - 1000;
+    currentAdjustedThrottle = (shift <= 0) ? 0 : ((shift >= 1000) ? 1000 : shift );
 
+    // PITCH & ROLL only dynamic PID adjustment,  depending on throttle value
     for (int axis = 0; axis < 3; axis++) {
         // non coupled PID reduction scaler used in PID controller 1 and PID controller 2.
 
@@ -910,6 +950,8 @@ void initRcProcessing(void)
 
         break;
     }
+    
+    BuildTPACurveThrottleLookupTables();
 
 #ifdef USE_YAW_SPIN_RECOVERY
     const int maxYawRate = (int)applyRates(FD_YAW, 1.0f, 1.0f);
