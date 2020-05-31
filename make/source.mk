@@ -217,6 +217,7 @@ ifneq ($(TARGET),$(filter $(TARGET),$(F1_TARGETS)))
 SPEED_OPTIMISED_SRC := $(SPEED_OPTIMISED_SRC) \
             common/encoding.c \
             common/filter.c \
+						common/kalman.c \
             common/maths.c \
             common/typeconversion.c \
             drivers/accgyro/accgyro_mpu.c \
@@ -270,7 +271,6 @@ SPEED_OPTIMISED_SRC := $(SPEED_OPTIMISED_SRC) \
             sensors/gyro.c \
             $(CMSIS_SRC) \
             $(DEVICE_STDPERIPH_SRC) \
-						common/kalman.c \
 
 SIZE_OPTIMISED_SRC := $(SIZE_OPTIMISED_SRC) \
             bus_bst_stm32f30x.c \
