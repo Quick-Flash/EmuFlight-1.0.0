@@ -41,7 +41,7 @@
 #define IMUF9001_RST_PIN        PA4
 #define IMUF9001_SPI_INSTANCE   SPI1
 #define USE_EXTI
-#define MPU_INT_EXTI            PB0 // NOT OK?
+//#define MPU_INT_EXTI            PB0 // NOT OK?
 #define USE_MPU_DATA_READY_SIGNAL
 
 
@@ -170,7 +170,7 @@
 #define USE_MAG
 #define USE_ESCSERIAL
 #define ESCSERIAL_TIMER_TX_PIN  NONE  // (HARDARE=0,PPM)
-#define USE_SERIAL_4WAY_BLHELI_INTERFACE //NOT OK?
+//#define USE_SERIAL_4WAY_BLHELI_INTERFACE //NOT OK?
 
 #define TARGET_IO_PORTA         0xffff
 #define TARGET_IO_PORTB         0xffff
@@ -195,7 +195,7 @@
 #define CURRENT_METER_SCALE_DEFAULT    250
 #define VBAT_SCALE                     109
 
-#define CAMERA_CONTROL_PIN             PB6    // define dedicated camera_osd_control pin
+//#define CAMERA_CONTROL_PIN             PB6    // define dedicated camera_osd_control pin
 
 #define IMUF_DEFAULT_PITCH_Q  3000
 #define IMUF_DEFAULT_ROLL_Q   3000

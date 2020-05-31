@@ -243,9 +243,9 @@ void mpuGyroDmaSpiReadFinish(gyroDev_t * gyro)
     acc.dev.ADCRaw[X]    = (int16_t)(imufData.accX * acc.dev.acc_1G);
     acc.dev.ADCRaw[Y]    = (int16_t)(imufData.accY * acc.dev.acc_1G);
     acc.dev.ADCRaw[Z]    = (int16_t)(imufData.accZ * acc.dev.acc_1G);
-    gyro->gyroADCf[X]    = imufData.gyroX;
-    gyro->gyroADCf[Y]    = imufData.gyroY;
-    gyro->gyroADCf[Z]    = imufData.gyroZ;
+    gyro->gyroADC[X]    = imufData.gyroX; //lets consider the imuf unfiltered data
+    gyro->gyroADC[Y]    = imufData.gyroY;
+    gyro->gyroADC[Z]    = imufData.gyroZ;
     gyro->gyroADCRaw[X]  = (int16_t)(imufData.gyroX * 16.4f);
     gyro->gyroADCRaw[Y]  = (int16_t)(imufData.gyroY * 16.4f);
     gyro->gyroADCRaw[Z]  = (int16_t)(imufData.gyroZ * 16.4f);
