@@ -67,6 +67,10 @@
 #include "drivers/accgyro_legacy/accgyro_mma845x.h"
 #endif
 
+#ifdef USE_ACC_IMUF9001
+#include "drivers/accgyro/accgyro_imuf9001.h"
+#endif //USE_ACC_IMUF9001
+
 #include "drivers/bus_spi.h"
 
 #include "config/config.h"
@@ -262,6 +266,15 @@ retry:
     case ACC_ICM20649:
         if (icm20649SpiAccDetect(dev)) {
             accHardware = ACC_ICM20649;
+            break;
+        }
+        FALLTHROUGH;
+#endif
+
+#ifdef USE_ACC_IMUF9001
+    case ACC_IMUF9001:
+        if (imufSpiAccDetect(dev)) {
+            accHardware = ACC_IMUF9001;
             break;
         }
         FALLTHROUGH;
@@ -515,14 +528,14 @@ void accUpdate(timeUs_t currentTimeUs, rollAndPitchTrims_t *rollAndPitchTrims)
         for (int axis = 0; axis < XYZ_AXIS_COUNT; axis++) {
             acc.accADC[axis] = biquadFilterApply(&accFilter[axis], acc.accADC[axis]);
         }
-    }
-
+    }  
+#ifndef USE_ACC_IMUF9001
     if (acc.dev.accAlign == ALIGN_CUSTOM) {
         alignSensorViaMatrix(acc.accADC, &acc.dev.rotationMatrix);
     } else {
         alignSensorViaRotation(acc.accADC, acc.dev.accAlign);
     }
-
+#endif
     if (!accIsCalibrationComplete()) {
         performAcclerationCalibration(rollAndPitchTrims);
     }

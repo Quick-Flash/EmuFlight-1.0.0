@@ -674,7 +674,7 @@ static bool mspCommonProcessOutCommand(int16_t cmdMSP, sbuf_t *dst, mspPostProce
 
         uint32_t configurationProblems = 0;
 
-#if defined(USE_ACC)
+#if defined(USE_ACC) || defined(USE_ACC_IMUF9001)
         if (!accHasBeenCalibrated()) {
             configurationProblems |= BIT(PROBLEM_ACC_NEEDS_CALIBRATION);
         }
@@ -1039,7 +1039,7 @@ static bool mspProcessOutCommand(int16_t cmdMSP, sbuf_t *dst)
 
     case MSP_RAW_IMU:
         {
-#if defined(USE_ACC)
+#if defined(USE_ACC) || defined(USE_ACC_IMUF9001)
             // Hack scale due to choice of units for sensor data in multiwii
 
             uint8_t scale;
@@ -2569,7 +2569,9 @@ static mspResult_e mspProcessInCommand(mspDescriptor_t srcDesc, int16_t cmdMSP, 
 
         // reinitialize the gyro filters with the new values
         validateAndFixGyroConfig();
+#ifndef USE_GYRO_IMUF9001
         gyroInitFilters();
+#endif
         // reinitialize the PID filters with the new values
         pidInitFilters(currentPidProfile);
 

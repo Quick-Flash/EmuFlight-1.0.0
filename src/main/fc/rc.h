@@ -39,6 +39,7 @@ typedef enum {
 
 void processRcCommand(void);
 float getSetpointRate(int axis);
+uint32_t getSetpointRateInt(int axis);
 float getRcDeflection(int axis);
 float getRcDeflectionAbs(int axis);
 float getThrottlePIDAttenuation(void);
@@ -56,5 +57,8 @@ float applyCurve(int axis, float deflection);
 uint32_t getRcFrameNumber();
 float getRcCurveSlope(int axis, float deflection);
 void updateRcRefreshRate(timeUs_t currentTimeUs);
+#ifdef USE_GYRO_IMUF9001
+extern volatile bool isSetpointNew;
+#endif
 uint16_t getCurrentRxRefreshRate(void);
 float rateDynamics(float rcCommand, int axis);

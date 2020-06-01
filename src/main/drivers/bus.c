@@ -44,27 +44,31 @@ bool busRawWriteRegister(const busDevice_t *busdev, uint8_t reg, uint8_t data)
 
 bool busWriteRegister(const busDevice_t *busdev, uint8_t reg, uint8_t data)
 {
-#if !defined(USE_SPI) && !defined(USE_I2C)
-    UNUSED(reg);
-    UNUSED(data);
-#endif
-    switch (busdev->bustype) {
-#ifdef USE_SPI
-    case BUSTYPE_SPI:
-#ifdef USE_SPI_TRANSACTION
-        // XXX Watch out fastpath users, if any
-        return spiBusTransactionWriteRegister(busdev, reg & 0x7f, data);
+#ifdef USE_DMA_SPI_DEVICE
+    return spiBusWriteRegister(busdev, reg & 0x7f, data);
 #else
+    #if !defined(USE_SPI) && !defined(USE_I2C)
+        UNUSED(reg);
+        UNUSED(data);
+    #endif
+        switch (busdev->bustype) {
+    #ifdef USE_SPI
+        case BUSTYPE_SPI:
+	#ifdef USE_SPI_TRANSACTION
+			// XXX Watch out fastpath users, if any
+            return spiBusWriteRegister(busdev, reg & 0x7f, data);
+	#else
         return spiBusWriteRegister(busdev, reg & 0x7f, data);
+    #endif
+	#endif
+    #ifdef USE_I2C
+        case BUSTYPE_I2C:
+            return i2cBusWriteRegister(busdev, reg, data);
+    #endif
+        default:
+            return false;
+        }
 #endif
-#endif
-#ifdef USE_I2C
-    case BUSTYPE_I2C:
-        return i2cBusWriteRegister(busdev, reg, data);
-#endif
-    default:
-        return false;
-    }
 }
 
 bool busRawWriteRegisterStart(const busDevice_t *busdev, uint8_t reg, uint8_t data)
@@ -124,28 +128,29 @@ bool busRawReadRegisterBuffer(const busDevice_t *busdev, uint8_t reg, uint8_t *d
 
 bool busReadRegisterBuffer(const busDevice_t *busdev, uint8_t reg, uint8_t *data, uint8_t length)
 {
+#ifdef USE_DMA_SPI_DEVICE
+    return spiBusReadRegisterBuffer(busdev, reg | 0x80, data, length);
+#else
 #if !defined(USE_SPI) && !defined(USE_I2C)
-    UNUSED(reg);
-    UNUSED(data);
-    UNUSED(length);
+        UNUSED(reg);
+        UNUSED(data);
+        UNUSED(length);
 #endif
-    switch (busdev->bustype) {
+        switch (busdev->bustype) {
 #ifdef USE_SPI
-    case BUSTYPE_SPI:
-#ifdef USE_SPI_TRANSACTION
-        // XXX Watch out fastpath users, if any
-        return spiBusTransactionReadRegisterBuffer(busdev, reg | 0x80, data, length);
+        case BUSTYPE_SPI:
+            return spiBusReadRegisterBuffer(busdev, reg | 0x80, data, length);
 #else
         return spiBusReadRegisterBuffer(busdev, reg | 0x80, data, length);
 #endif
-#endif
 #ifdef USE_I2C
-    case BUSTYPE_I2C:
-        return i2cBusReadRegisterBuffer(busdev, reg, data, length);
+        case BUSTYPE_I2C:
+            return i2cBusReadRegisterBuffer(busdev, reg, data, length);
 #endif
-    default:
-        return false;
-    }
+        default:
+            return false;
+        }
+#endif
 }
 
 bool busRawReadRegisterBufferStart(const busDevice_t *busdev, uint8_t reg, uint8_t *data, uint8_t length)
@@ -217,6 +222,11 @@ bool busBusy(const busDevice_t *busdev, bool *error)
 
 uint8_t busReadRegister(const busDevice_t *busdev, uint8_t reg)
 {
+#ifdef USE_DMA_SPI_DEVICE
+    uint8_t data;
+    busReadRegisterBuffer(busdev, reg, &data, 1);
+    return data;
+#else
 #if !defined(USE_SPI) && !defined(USE_I2C)
     UNUSED(busdev);
     UNUSED(reg);
@@ -225,5 +235,6 @@ uint8_t busReadRegister(const busDevice_t *busdev, uint8_t reg)
     uint8_t data;
     busReadRegisterBuffer(busdev, reg, &data, 1);
     return data;
+#endif
 #endif
 }

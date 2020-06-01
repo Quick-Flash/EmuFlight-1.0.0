@@ -79,6 +79,11 @@
 #include "sensors/gyro.h"
 #include "sensors/rangefinder.h"
 
+//ADD IMUF SUPPORT
+#ifdef USE_GYRO_IMUF9001
+#include "drivers/accgyro/accgyro_imuf9001.h"
+#endif
+
 #if defined(ENABLE_BLACKBOX_LOGGING_ON_SPIFLASH_BY_DEFAULT)
 #define DEFAULT_BLACKBOX_DEVICE     BLACKBOX_DEVICE_FLASH
 #elif defined(ENABLE_BLACKBOX_LOGGING_ON_SDCARD_BY_DEFAULT)
@@ -1426,6 +1431,19 @@ static bool blackboxWriteSysinfo(void)
         BLACKBOX_PRINT_HEADER_LINE("rc_smoothing_rx_average", "%d",         rcSmoothingData->averageFrameTimeUs);
 #endif // USE_RC_SMOOTHING_FILTER
         BLACKBOX_PRINT_HEADER_LINE("rates_type", "%d",                      currentControlRateProfile->rates_type);
+        
+        #ifdef USE_GYRO_IMUF9001
+            BLACKBOX_PRINT_HEADER_LINE("IMUF revision", " %d",              imufCurrentVersion);
+            BLACKBOX_PRINT_HEADER_LINE("IMUF lowpass roll", " %d",          gyroConfig()->imuf_roll_lpf_cutoff_hz);
+            BLACKBOX_PRINT_HEADER_LINE("IMUF lowpass pitch", " %d",         gyroConfig()->imuf_pitch_lpf_cutoff_hz);
+            BLACKBOX_PRINT_HEADER_LINE("IMUF lowpass yaw", " %d",           gyroConfig()->imuf_yaw_lpf_cutoff_hz);
+            BLACKBOX_PRINT_HEADER_LINE("IMUF acc lpf cutoff", " %d",        gyroConfig()->imuf_acc_lpf_cutoff_hz);
+        #endif
+        BLACKBOX_PRINT_HEADER_LINE("IMUF roll q", " %d",                gyroConfig()->imuf_roll_q);
+        BLACKBOX_PRINT_HEADER_LINE("IMUF pitch q", " %d",               gyroConfig()->imuf_pitch_q);
+        BLACKBOX_PRINT_HEADER_LINE("IMUF yaw q", " %d",                 gyroConfig()->imuf_yaw_q);
+        BLACKBOX_PRINT_HEADER_LINE("IMUF w", " %d",                     gyroConfig()->imuf_w);
+        BLACKBOX_PRINT_HEADER_LINE("IMUF sharpness", " %d",             gyroConfig()->imuf_sharpness);
 
         default:
             return true;

@@ -35,12 +35,19 @@ void SetSysClock(void);
 
 void systemReset(void)
 {
+    if (mpuResetFn) {
+        mpuResetFn();
+    }
     __disable_irq();
     NVIC_SystemReset();
 }
 
 void systemResetToBootloader(bootloaderRequestType_e requestType)
 {
+    if (mpuResetFn) {
+        mpuResetFn();
+    }
+    
     switch (requestType) {
     case BOOTLOADER_REQUEST_ROM:
     default:

@@ -140,6 +140,9 @@ void systemResetToMsc(int timezoneOffsetMinutes)
 
 void systemResetFromMsc(void)
 {
+    if (mpuResetFn) {
+        mpuResetFn();
+    }
     persistentObjectWrite(PERSISTENT_OBJECT_RESET_REASON, RESET_NONE);
     __disable_irq();
     NVIC_SystemReset();
