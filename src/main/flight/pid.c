@@ -536,6 +536,7 @@ typedef struct pidCoefficient_s {
 } pidCoefficient_t;
 
 static FAST_RAM_ZERO_INIT pidCoefficient_t pidCoefficient[XYZ_AXIS_COUNT];
+static FAST_RAM_ZERO_INIT float previousMeasurement[XYZ_AXIS_COUNT];
 static FAST_RAM_ZERO_INIT float maxVelocity[XYZ_AXIS_COUNT];
 static FAST_RAM_ZERO_INIT float feedForwardTransition;
 static FAST_RAM_ZERO_INIT float P_angle_low, D_angle_low, P_angle_high, D_angle_high, F_angle;
@@ -1298,7 +1299,6 @@ static FAST_CODE_NOINLINE float applyLaunchControl(int axis, const rollAndPitchT
 // Based on 2DOF reference design (matlab)
 void FAST_CODE pidController(const pidProfile_t *pidProfile, timeUs_t currentTimeUs)
 {
-    static float previousGyroRateDterm[XYZ_AXIS_COUNT];
 #ifdef USE_INTERPOLATED_SP
     static FAST_RAM_ZERO_INIT uint32_t lastFrameNumber;
 #endif
@@ -1370,19 +1370,8 @@ void FAST_CODE pidController(const pidProfile_t *pidProfile, timeUs_t currentTim
         dynCi *= constrainf((1.0f - getMotorMixRange()) * itermWindupPointInv, 0.0f, 1.0f);
     }
 
-    // Precalculate gyro deta for D-term here, this allows loop unrolling
-    float gyroRateDterm[XYZ_AXIS_COUNT];
-    for (int axis = FD_ROLL; axis <= FD_YAW; ++axis) {
-        gyroRateDterm[axis] = gyro.gyroADCf[axis];
-#ifdef USE_RPM_FILTER
-        gyroRateDterm[axis] = rpmFilterDterm(axis,gyroRateDterm[axis]);
-#endif
-        gyroRateDterm[axis] = dtermNotchApplyFn((filter_t *) &dtermNotch[axis], gyroRateDterm[axis]);
-        gyroRateDterm[axis] = dtermLowpassApplyFn((filter_t *) &dtermLowpass[axis], gyroRateDterm[axis]);
-        gyroRateDterm[axis] = dtermLowpass2ApplyFn((filter_t *) &dtermLowpass2[axis], gyroRateDterm[axis]);
-    }
-
     rotateItermAndAxisError();
+
 #ifdef USE_RPM_FILTER
     rpmFilterUpdate();
 #endif
@@ -1526,19 +1515,24 @@ void FAST_CODE pidController(const pidProfile_t *pidProfile, timeUs_t currentTim
             // This is done to avoid DTerm spikes that occur with dynamically
             // calculated deltaT whenever another task causes the PID
             // loop execution to be delayed.
-            const float delta =
-                - (gyroRateDterm[axis] - previousGyroRateDterm[axis]) * pidFrequency;
+            const float pureMeasurement = -(gyro.gyroADCf[axis] - previousMeasurement[axis]);
+            previousMeasurement[axis] = gyro.gyroADCf[axis];
+            float dDelta = pureMeasurement * pidFrequency;
+            // Filter dterm properly
+            dDelta = dtermNotchApplyFn((filter_t *) &dtermNotch[axis], dDelta);
+            dDelta = dtermLowpassApplyFn((filter_t *) &dtermLowpass[axis], dDelta);
+            dDelta = dtermLowpass2ApplyFn((filter_t *) &dtermLowpass2[axis], dDelta);
 
 #if defined(USE_ACC)
             if (cmpTimeUs(currentTimeUs, levelModeStartTimeUs) > CRASH_RECOVERY_DETECTION_DELAY_US) {
-                detectAndSetCrashRecovery(pidProfile->crash_recovery, axis, currentTimeUs, delta, errorRate);
+                detectAndSetCrashRecovery(pidProfile->crash_recovery, axis, currentTimeUs, dDelta, errorRate);
             }
 #endif
 
             float dMinFactor = 1.0f;
 #if defined(USE_D_MIN)
             if (dMinPercent[axis] > 0) {
-                float dMinGyroFactor = biquadFilterApply(&dMinRange[axis], delta);
+                float dMinGyroFactor = biquadFilterApply(&dMinRange[axis], dDelta);
                 dMinGyroFactor = fabsf(dMinGyroFactor) * dMinGyroGain;
                 const float dMinSetpointFactor = (fabsf(pidSetpointDelta)) * dMinSetpointGain;
                 dMinFactor = MAX(dMinGyroFactor, dMinSetpointFactor);
@@ -1554,11 +1548,10 @@ void FAST_CODE pidController(const pidProfile_t *pidProfile, timeUs_t currentTim
                 }
             }
 #endif
-            pidData[axis].D = pidCoefficient[axis].Kd * delta * tpaFactor * dMinFactor;
+            pidData[axis].D = pidCoefficient[axis].Kd * dDelta * tpaFactor * dMinFactor;
         } else {
             pidData[axis].D = 0;
         }
-        previousGyroRateDterm[axis] = gyroRateDterm[axis];
 
         // -----calculate feedforward component
 #ifdef USE_ABSOLUTE_CONTROL
