@@ -174,6 +174,11 @@ float rpmFilterGyro(int axis, float value)
     return applyFilter(gyroFilter, axis, value);
 }
 
+float rpmFilterDterm(int axis, float value)
+{
+    return applyFilter(dtermFilter, axis, value);
+}
+
 FAST_RAM_ZERO_INIT static float motorFrequency[MAX_SUPPORTED_MOTORS];
 
 FAST_CODE_NOINLINE void rpmFilterUpdate()
