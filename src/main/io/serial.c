@@ -278,7 +278,7 @@ bool isSerialConfigValid(const serialConfig_t *serialConfigToCheck)
      * - 1 MSP port minimum, max MSP ports is defined and must be adhered to.
      * - MSP is allowed to be shared with EITHER any telemetry OR blackbox.
      *   (using either / or, switching based on armed / disarmed or the AUX channel configured for BOXTELEMETRY)
-     * - serial RX and FrSky / LTM / MAVLink telemetry can be shared
+     * - serial RX and FrSky / LTM / telemetry can be shared
      *   (serial RX using RX line, telemetry using TX line)
      * - No other sharing combinations are valid.
      */

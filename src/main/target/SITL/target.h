@@ -110,7 +110,6 @@
 #undef USE_TELEMETRY_FRSKY_HUB
 #undef USE_TELEMETRY_HOTT
 #undef USE_TELEMETRY_SMARTPORT
-#undef USE_TELEMETRY_MAVLINK
 #undef USE_RESOURCE_MGMT
 #undef USE_CMS
 #undef USE_TELEMETRY_CRSF
@@ -254,5 +253,3 @@ uint64_t micros64(void);
 uint64_t millis64(void);
 
 int lockMainPID(void);
-
-

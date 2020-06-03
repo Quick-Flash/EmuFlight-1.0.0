@@ -47,7 +47,6 @@
 #define USE_TELEMETRY_IBUS
 #define USE_TELEMETRY_JETIEXBUS
 #define USE_TELEMETRY_LTM
-#define USE_TELEMETRY_MAVLINK
 #define USE_TELEMETRY_SMARTPORT
 #define USE_LED_STRIP
 #define USE_LED_STRIP_STATUS_MODE
@@ -81,4 +80,3 @@
 #define TARGET_IO_PORTA         0xffff
 #define TARGET_IO_PORTB         0xffff
 #define TARGET_IO_PORTC         0xffff
-

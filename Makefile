@@ -201,7 +201,6 @@ EXTRA_LD_FLAGS += -Wl,--defsym=USE_CUSTOM_DEFAULTS_EXTENDED=1
 endif
 
 INCLUDE_DIRS    := $(INCLUDE_DIRS) \
-                   $(ROOT)/lib/main/MAVLink
 
 INCLUDE_DIRS    := $(INCLUDE_DIRS) \
                    $(TARGET_DIR)

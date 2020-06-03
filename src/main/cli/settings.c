@@ -1172,12 +1172,6 @@ const clivalue_t valueTable[] = {
 #if defined(USE_TELEMETRY_IBUS)
     { "ibus_sensor",                VAR_UINT8  | MASTER_VALUE | MODE_ARRAY, .config.array.length = IBUS_SENSOR_COUNT, PG_TELEMETRY_CONFIG, offsetof(telemetryConfig_t, flysky_sensors)},
 #endif
-#ifdef USE_TELEMETRY_MAVLINK
-    // Support for misusing the heading field in MAVlink to indicate mAh drawn for Connex Prosight OSD
-    // Set to 10 to show a tenth of your capacity drawn.
-    // Set to $size_of_battery to get a percentage of battery used.
-    { "mavlink_mah_as_heading_divisor", VAR_UINT16 | MASTER_VALUE, .config.minmaxUnsigned = { 0, 30000 }, PG_TELEMETRY_CONFIG, offsetof(telemetryConfig_t, mavlink_mah_as_heading_divisor) },
-#endif
 #ifdef USE_TELEMETRY_SENSORS_DISABLED_DETAILS
     { "telemetry_disabled_voltage",         VAR_UINT32  | MASTER_VALUE | MODE_BITSET, .config.bitpos = LOG2(SENSOR_VOLTAGE),         PG_TELEMETRY_CONFIG, offsetof(telemetryConfig_t, disabledSensors)},
     { "telemetry_disabled_current",         VAR_UINT32  | MASTER_VALUE | MODE_BITSET, .config.bitpos = LOG2(SENSOR_CURRENT),         PG_TELEMETRY_CONFIG, offsetof(telemetryConfig_t, disabledSensors)},

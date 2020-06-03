@@ -52,7 +52,6 @@
 #include "telemetry/smartport.h"
 #include "telemetry/ltm.h"
 #include "telemetry/jetiexbus.h"
-#include "telemetry/mavlink.h"
 #include "telemetry/crsf.h"
 #include "telemetry/srxl.h"
 #include "telemetry/ibus.h"
@@ -77,7 +76,6 @@ PG_RESET_TEMPLATE(telemetryConfig_t, telemetryConfig,
             IBUS_SENSOR_TYPE_EXTERNAL_VOLTAGE
     },
     .disabledSensors = ESC_SENSOR_ALL,
-    .mavlink_mah_as_heading_divisor = 0,
 );
 
 void telemetryInit(void)
@@ -96,9 +94,6 @@ void telemetryInit(void)
 #endif
 #ifdef USE_TELEMETRY_JETIEXBUS
     initJetiExBusTelemetry();
-#endif
-#ifdef USE_TELEMETRY_MAVLINK
-    initMAVLinkTelemetry();
 #endif
 #ifdef USE_TELEMETRY_CRSF
     initCrsfTelemetry();
@@ -177,9 +172,6 @@ void telemetryCheckState(void)
 #ifdef USE_TELEMETRY_JETIEXBUS
     checkJetiExBusTelemetryState();
 #endif
-#ifdef USE_TELEMETRY_MAVLINK
-    checkMAVLinkTelemetryState();
-#endif
 #ifdef USE_TELEMETRY_CRSF
     checkCrsfTelemetryState();
 #endif
@@ -211,9 +203,6 @@ void telemetryProcess(uint32_t currentTime)
 #endif
 #ifdef USE_TELEMETRY_JETIEXBUS
     handleJetiExBusTelemetry();
-#endif
-#ifdef USE_TELEMETRY_MAVLINK
-    handleMAVLinkTelemetry();
 #endif
 #ifdef USE_TELEMETRY_CRSF
     handleCrsfTelemetry(currentTime);

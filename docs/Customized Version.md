@@ -66,7 +66,6 @@ And bigger than 128 megabits:
 #define TELEMETRY_CRSF
 #define TELEMETRY_IBUS
 #define TELEMETRY_JETIEXBUS
-#define TELEMETRY_MAVLINK
 #define TELEMETRY_SRXL
 #define USE_DASHBOARD
 #define USE_MSP_DISPLAYPORT
@@ -96,11 +95,11 @@ After looking carefully to this file, you must know what features you want to di
 
 ## Specific features for each Flight Controller
 
-Each flight controller has it's own file to specify what features are enabled or disable only for it. Sometimes they have been disabled by space limitations, but other times it's for limited computing capacity or a bug, so enable it at your own risk. 
+Each flight controller has it's own file to specify what features are enabled or disable only for it. Sometimes they have been disabled by space limitations, but other times it's for limited computing capacity or a bug, so enable it at your own risk.
 
 This file is located in `target/[FLIGHT_CONTROLLER_NAME]/target.h` and it's loaded **after** the `target/common_pre.h`. So any changes in this file will overwrite the default settings, so this file is the place where you must touch to create your custom firmware.
 
-The first thing to do is to *#undef* all the features that we want to disable from the *common_pre.h*. 
+The first thing to do is to *#undef* all the features that we want to disable from the *common_pre.h*.
 
 For example, in a NAZE32, if we're using Serial RX, with a FlySky receiver (that uses de iBus protocol) and we don't have a led strip we will add all this *#undef* to the file.
 
