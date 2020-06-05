@@ -66,6 +66,10 @@
 static uint8_t tmpPidProfileIndex;
 static uint8_t pidProfileIndex;
 static char pidProfileIndexString[MAX_PROFILE_NAME_LENGTH + 5];
+static uint16_t errorBoost;
+static uint8_t errorBoostLimit;
+static uint16_t errorBoostYaw;
+static uint8_t errorBoostLimitYaw;
 static uint8_t tempPid[3][3];
 static uint16_t tempPidF[3];
 
@@ -157,6 +161,11 @@ static const void *cmsx_PidRead(void)
 {
 
     const pidProfile_t *pidProfile = pidProfiles(pidProfileIndex);
+    errorBoost = pidProfile->error_boost;
+    errorBoostLimit = pidProfile->error_boost_limit;
+    errorBoostYaw = pidProfile->error_boost_yaw;
+    errorBoostLimitYaw = pidProfile->error_boost_limit_yaw;
+
     for (uint8_t i = 0; i < 3; i++) {
         tempPid[i][0] = pidProfile->pid[i].P;
         tempPid[i][1] = pidProfile->pid[i].I;
@@ -183,6 +192,11 @@ static const void *cmsx_PidWriteback(displayPort_t *pDisp, const OSD_Entry *self
     UNUSED(self);
 
     pidProfile_t *pidProfile = currentPidProfile;
+    pidProfile->error_boost = errorBoost;
+    pidProfile->error_boost_limit = errorBoostLimit;
+    pidProfile->error_boost_yaw = errorBoostYaw;
+    pidProfile->error_boost_limit_yaw = errorBoostLimitYaw;
+
     for (uint8_t i = 0; i < 3; i++) {
         pidProfile->pid[i].P = tempPid[i][0];
         pidProfile->pid[i].I = tempPid[i][1];
@@ -198,6 +212,9 @@ static const OSD_Entry cmsx_menuPidEntries[] =
 {
     { "-- PID --", OME_Label, NULL, pidProfileIndexString, 0},
 
+    { "ERROR BOOST", OME_UINT16, NULL, &(OSD_UINT16_t){ &errorBoost,      0,  5000, 5}, 0 },
+    { "BOOST LIMIT", OME_UINT8, NULL, &(OSD_UINT8_t){ &errorBoostLimit,   0,  250,  1}, 0 },
+
     { "ROLL  P", OME_UINT8, NULL, &(OSD_UINT8_t){ &tempPid[PID_ROLL][0],  0, 200, 1 }, 0 },
     { "ROLL  I", OME_UINT8, NULL, &(OSD_UINT8_t){ &tempPid[PID_ROLL][1],  0, 200, 1 }, 0 },
     { "ROLL  D", OME_UINT8, NULL, &(OSD_UINT8_t){ &tempPid[PID_ROLL][2],  0, 200, 1 }, 0 },
@@ -207,6 +224,9 @@ static const OSD_Entry cmsx_menuPidEntries[] =
     { "PITCH I", OME_UINT8, NULL, &(OSD_UINT8_t){ &tempPid[PID_PITCH][1], 0, 200, 1 }, 0 },
     { "PITCH D", OME_UINT8, NULL, &(OSD_UINT8_t){ &tempPid[PID_PITCH][2], 0, 200, 1 }, 0 },
     { "PITCH F", OME_UINT16, NULL, &(OSD_UINT16_t){ &tempPidF[PID_PITCH], 0, 2000, 1 }, 0 },
+
+    { "ERROR BOOST YAW", OME_UINT16, NULL, &(OSD_UINT16_t){ &errorBoostYaw,      0,  5000, 5}, 0 },
+    { "BOOST LIMIT YAW", OME_UINT8, NULL, &(OSD_UINT8_t){ &errorBoostLimitYaw,   0,  250,  1}, 0 },
 
     { "YAW   P", OME_UINT8, NULL, &(OSD_UINT8_t){ &tempPid[PID_YAW][0],   0, 200, 1 }, 0 },
     { "YAW   I", OME_UINT8, NULL, &(OSD_UINT8_t){ &tempPid[PID_YAW][1],   0, 200, 1 }, 0 },

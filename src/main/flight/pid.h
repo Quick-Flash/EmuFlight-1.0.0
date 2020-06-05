@@ -131,13 +131,13 @@ typedef struct pidProfile_s {
     uint16_t pidSumLimit;
     uint16_t pidSumLimitYaw;
     uint8_t pidAtMinThrottle;               // Disable/Enable pids on zero throttle. Normally even without airmode P and D would be active.
-    uint8_t levelAngleLimit;                // Max angle in degrees in level mode
 
+    uint8_t levelAngleLimit;                // Max angle in degrees in level mode
     uint8_t horizon_tilt_effect;            // inclination factor for Horizon mode
     uint8_t horizon_tilt_expert_mode;       // OFF or ON
 
     // Betaflight PID controller parameters
-    uint8_t  antiGravityMode;             // type of anti gravity method
+    uint8_t  antiGravityMode;               // type of anti gravity method
     uint16_t itermThrottleThreshold;        // max allowed throttle delta before iterm accelerated in ms
     uint16_t itermAcceleratorGain;          // Iterm Accelerator Gain when itermThrottlethreshold is hit
     uint16_t yawRateAccelLimit;             // yaw accel limiter for deg/sec/ms
@@ -201,6 +201,11 @@ typedef struct pidProfile_s {
     uint8_t dyn_lpf_curve_expo;             // set the curve for dynamic dterm lowpass filter
     uint8_t level_race_mode;                // NFE race mode - when true pitch setpoint calcualtion is gyro based in level mode
     uint8_t vbat_sag_compensation;          // Reduce motor output by this percentage of the maximum compensation amount
+
+    uint16_t error_boost;                    // nonlinear boost in error
+    uint8_t error_boost_limit;              // limit for the boosting amount for error_boost
+    uint16_t error_boost_yaw;                // nonlinear boost in error for yaw
+    uint8_t error_boost_limit_yaw;          // limit for the boosting amount for error_boost_yaw
 } pidProfile_t;
 
 PG_DECLARE_ARRAY(pidProfile_t, PID_PROFILE_COUNT, pidProfiles);
@@ -284,6 +289,11 @@ typedef struct pidRuntime_s {
     bool itermRotation;
     bool zeroThrottleItermReset;
     bool levelRaceMode;
+
+    float errorMultiplier;
+    float errorBoostLimit;
+    float errorMultiplierYaw;
+    float errorBoostLimitYaw;
 
 #ifdef USE_ITERM_RELAX
     pt1Filter_t windupLpf[XYZ_AXIS_COUNT];

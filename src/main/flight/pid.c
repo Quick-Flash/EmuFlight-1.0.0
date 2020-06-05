@@ -760,6 +760,17 @@ static FAST_CODE_NOINLINE float applyLaunchControl(int axis, const rollAndPitchT
 }
 #endif
 
+static FAST_CODE float applyErrorBoost(float errorMultiplier, float errorBoostLimit, float errorRate)
+{
+  float boostedErrorRate;
+
+  boostedErrorRate = (errorRate * fabsf(errorRate)) * errorMultiplier;
+
+  boostedErrorRate = constrainf(boostedErrorRate, 0.0f, fabsf(errorRate * errorBoostLimit));
+
+  return boostedErrorRate;
+}
+
 // Betaflight pid controller, which will be maintained in the future with additional features specialised for current (mini) multirotor usage.
 // Based on 2DOF reference design (matlab)
 void FAST_CODE pidController(const pidProfile_t *pidProfile, timeUs_t currentTimeUs)
@@ -938,12 +949,24 @@ void FAST_CODE pidController(const pidProfile_t *pidProfile, timeUs_t currentTim
         float setpointCorrection = currentPidSetpoint - uncorrectedSetpoint;
 #endif
 
+        float ptermErrorBoost;
+        float itermErrorBoost;
+
+        if (axis != YAW)
+        {
+          ptermErrorBoost = applyErrorBoost(pidRuntime.errorMultiplier, pidRuntime.errorBoostLimit, errorRate);
+          itermErrorBoost = applyErrorBoost(pidRuntime.errorMultiplier, pidRuntime.errorBoostLimit, itermErrorRate);
+        } else {
+          ptermErrorBoost = applyErrorBoost(pidRuntime.errorMultiplierYaw, pidRuntime.errorBoostLimitYaw, errorRate);
+          itermErrorBoost = applyErrorBoost(pidRuntime.errorMultiplierYaw, pidRuntime.errorBoostLimitYaw, itermErrorRate);
+        }
+
         // --------low-level gyro-based PID based on 2DOF PID controller. ----------
         // 2-DOF PID controller with optional filter on derivative term.
         // b = 1 and only c (feedforward weight) can be tuned (amount derivative on measurement or error).
 
         // -----calculate P component
-        pidData[axis].P = pidRuntime.pidCoefficient[axis].Kp * errorRate * tpaFactorKp;
+        pidData[axis].P = pidRuntime.pidCoefficient[axis].Kp * (errorRate + ptermErrorBoost) * tpaFactorKp;
         if (axis == FD_YAW) {
             pidData[axis].P = pidRuntime.ptermYawLowpassApplyFn((filter_t *) &pidRuntime.ptermYawLowpass, pidData[axis].P);
         }
@@ -963,7 +986,7 @@ void FAST_CODE pidController(const pidProfile_t *pidProfile, timeUs_t currentTim
             axisDynCi = (axis == FD_YAW) ? dynCi : pidRuntime.dT; // only apply windup protection to yaw
         }
 
-        pidData[axis].I = constrainf(previousIterm + (Ki * axisDynCi + agGain) * itermErrorRate, -pidRuntime.itermLimit, pidRuntime.itermLimit);
+        pidData[axis].I = constrainf(previousIterm + (Ki * axisDynCi + agGain) * (itermErrorRate + itermErrorBoost), -pidRuntime.itermLimit, pidRuntime.itermLimit);
 
         // -----calculate pidSetpointDelta
         float pidSetpointDelta = 0;
