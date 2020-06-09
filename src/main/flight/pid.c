@@ -127,9 +127,9 @@ void resetPidProfile(pidProfile_t *pidProfile)
 {
     RESET_CONFIG(pidProfile_t, pidProfile,
         .pid = {
-            [PID_ROLL] =  { 42, 85, 35, 90 },
-            [PID_PITCH] = { 46, 90, 38, 95 },
-            [PID_YAW] =   { 45, 90, 0, 90 },
+            [PID_ROLL] =  { 42, 100, 83, 90 },
+            [PID_PITCH] = { 46, 100, 83, 95 },
+            [PID_YAW] =   { 45, 100, 0, 90 },
             [PID_LEVEL] = { 50, 50, 75, 0 },
             [PID_MAG] =   { 40, 0, 0, 0 },
         },
@@ -157,10 +157,10 @@ void resetPidProfile(pidProfile_t *pidProfile)
         .horizon_tilt_effect = 75,
         .horizon_tilt_expert_mode = false,
         .crash_limit_yaw = 200,
-        .itermLimit = 400,
+        .itermLimit = 500,
         .throttle_boost = 5,
         .throttle_boost_cutoff = 15,
-        .iterm_rotation = false,
+        .iterm_rotation = true,
         .iterm_relax = ITERM_RELAX_RP,
         .iterm_relax_cutoff = ITERM_RELAX_CUTOFF_DEFAULT,
         .iterm_relax_type = ITERM_RELAX_SETPOINT,
@@ -212,8 +212,8 @@ void resetPidProfile(pidProfile_t *pidProfile)
         .vbat_sag_compensation = 0,
     );
 #ifndef USE_D_MIN
-    pidProfile->pid[PID_ROLL].D = 30;
-    pidProfile->pid[PID_PITCH].D = 32;
+    pidProfile->pid[PID_ROLL].D = 71;
+    pidProfile->pid[PID_PITCH].D = 71;
 #endif
 }
 

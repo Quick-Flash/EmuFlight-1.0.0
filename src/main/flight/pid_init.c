@@ -261,17 +261,12 @@ void pidInitConfig(const pidProfile_t *pidProfile)
     } else {
         pidRuntime.feedForwardTransition = 100.0f / pidProfile->feedForwardTransition;
     }
-    for (int axis = FD_ROLL; axis <= FD_YAW; axis++) {
-        pidRuntime.pidCoefficient[axis].Kp = PTERM_SCALE * pidProfile->pid[axis].P;
-        pidRuntime.pidCoefficient[axis].Ki = ITERM_SCALE * pidProfile->pid[axis].I;
-        pidRuntime.pidCoefficient[axis].Kd = DTERM_SCALE * pidProfile->pid[axis].D;
-        pidRuntime.pidCoefficient[axis].Kf = FEEDFORWARD_SCALE * (pidProfile->pid[axis].F / 100.0f);
-    }
-#ifdef USE_INTEGRATED_YAW_CONTROL
-    if (!pidProfile->use_integrated_yaw)
-#endif
+    for (int axis = FD_ROLL; axis <= FD_YAW; axis++) // SLIDERS :)
     {
-        pidRuntime.pidCoefficient[FD_YAW].Ki *= 2.5f;
+        pidRuntime.pidCoefficient[axis].Kp = PTERM_SCALE * pidProfile->pid[axis].P;
+        pidRuntime.pidCoefficient[axis].Ki = ITERM_SCALE * pidProfile->pid[axis].P * pidProfile->pid[axis].I / 100.0f;
+        pidRuntime.pidCoefficient[axis].Kd = DTERM_SCALE * pidProfile->pid[axis].P * pidProfile->pid[axis].D / 100.0f;
+        pidRuntime.pidCoefficient[axis].Kf = FEEDFORWARD_SCALE * (pidProfile->pid[axis].F / 100.0f);
     }
 
     pidRuntime.levelGain = pidProfile->pid[PID_LEVEL].P / 10.0f;
@@ -412,4 +407,3 @@ void pidCopyProfile(uint8_t dstPidProfileIndex, uint8_t srcPidProfileIndex)
         memcpy(pidProfilesMutable(dstPidProfileIndex), pidProfilesMutable(srcPidProfileIndex), sizeof(pidProfile_t));
     }
 }
-
