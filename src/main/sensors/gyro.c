@@ -135,19 +135,20 @@ void pgResetFn_gyroConfig(gyroConfig_t *gyroConfig)
     gyroConfig->dyn_notch_q = 250;
     gyroConfig->dyn_notch_min_hz = 150;
     gyroConfig->gyro_filter_debug_axis = FD_ROLL;
+#ifndef USE_GYRO_IMUF9001
     gyroConfig->imuf_roll_q = 5000;
     gyroConfig->imuf_pitch_q = 5000;
     gyroConfig->imuf_yaw_q = 5000;
     gyroConfig->imuf_w = 32;
     gyroConfig->imuf_sharpness = 2500;
-#ifdef USE_GYRO_IMUF9001
-    gyroConfig->imuf_mode = GTBCM_GYRO_ACC_FILTER_F,
-    gyroConfig->imuf_rate = IMUF_RATE_16K,
-    gyroConfig->imuf_roll_lpf_cutoff_hz = IMUF_DEFAULT_LPF_HZ,
-    gyroConfig->imuf_pitch_lpf_cutoff_hz = IMUF_DEFAULT_LPF_HZ,
-    gyroConfig->imuf_yaw_lpf_cutoff_hz = IMUF_DEFAULT_LPF_HZ,
-   	gyroConfig->imuf_acc_lpf_cutoff_hz = IMUF_DEFAULT_ACC_LPF_HZ,
-    gyroConfig->gyro_offset_yaw = 0,
+#else
+    gyroConfig->imuf_mode = GTBCM_GYRO_ACC_FILTER_F;
+    gyroConfig->imuf_rate = IMUF_RATE_16K;
+    gyroConfig->imuf_roll_lpf_cutoff_hz = IMUF_DEFAULT_LPF_HZ;
+    gyroConfig->imuf_pitch_lpf_cutoff_hz = IMUF_DEFAULT_LPF_HZ;
+    gyroConfig->imuf_yaw_lpf_cutoff_hz = IMUF_DEFAULT_LPF_HZ;
+   	gyroConfig->imuf_acc_lpf_cutoff_hz = IMUF_DEFAULT_ACC_LPF_HZ;
+    gyroConfig->gyro_offset_yaw = 0;
 #endif //USE_GYRO_IMUF9001
 }
 
@@ -400,26 +401,22 @@ static FAST_CODE FAST_CODE_NOINLINE void gyroUpdateSensor(gyroSensor_t *gyroSens
     }
 #endif
     gyroSensor->gyroDev.dataReady = false;
-
-    const timeDelta_t sampleDeltaUs = currentTimeUs - accumulationLastTimeSampledUs;
-    accumulationLastTimeSampledUs = currentTimeUs;
-    accumulatedMeasurementTimeUs += sampleDeltaUs;
 #ifdef USE_GYRO_IMUF9001
     for (int axis = 0; axis < XYZ_AXIS_COUNT; axis++) {
         // NOTE: this branch optimized for when there is no gyro debugging, ensure it is kept in step with non-optimized branch
-        DEBUG_SET(DEBUG_GYRO_SCALED, axis, lrintf(gyroSensor->gyroDev.gyroADCf[axis]));
-        if (!gyroSensor->overflowDetected) {
+        DEBUG_SET(DEBUG_GYRO_SCALED, axis, lrintf(gyroSensor->gyroDev.gyroADC[axis]));
+        if (!overflowDetected) {
             // integrate using trapezium rule to avoid bias
-            accumulatedMeasurements[axis] += 0.5f * (gyroPrevious[axis] + gyroSensor->gyroDev.gyroADCf[axis]) * sampleDeltaUs;
-            gyroPrevious[axis] = gyroSensor->gyroDev.gyroADCf[axis];
+            accumulatedMeasurements[axis] += 0.5f * (gyroPrevious[axis] + gyroSensor->gyroDev.gyroADC[axis]) * gyro.targetLooptime;
+            gyroPrevious[axis] = gyroSensor->gyroDev.gyroADC[axis];
         }
     }
     if (!isGyroSensorCalibrationComplete(gyroSensor)) {
         performGyroCalibration(gyroSensor, gyroConfig()->gyroMovementCalibrationThreshold);
         // Reset gyro values to zero to prevent other code from using uncalibrated data
-        gyroSensor->gyroDev.gyroADCf[X] = 0.0f;
-        gyroSensor->gyroDev.gyroADCf[Y] = 0.0f;
-        gyroSensor->gyroDev.gyroADCf[Z] = 0.0f;
+        gyroSensor->gyroDev.gyroADC[X] = 0.0f;
+        gyroSensor->gyroDev.gyroADC[Y] = 0.0f;
+        gyroSensor->gyroDev.gyroADC[Z] = 0.0f;
         // still calibrating, so no need to further process gyro data
     }
 #else
@@ -451,13 +448,13 @@ static FAST_CODE FAST_CODE_NOINLINE void gyroUpdateSensor(gyroSensor_t *gyroSens
 FAST_CODE void gyroDmaSpiFinishRead(void)
 {
     //called by dma callback
-    mpuGyroDmaSpiReadFinish(&gyroSensor1.gyroDev);
+    mpuGyroDmaSpiReadFinish(&gyro.gyroSensor1.gyroDev);
 }
 
 FAST_CODE void gyroDmaSpiStartRead(void)
 {
     //called by exti
-    mpuGyroDmaSpiReadStart(&gyroSensor1.gyroDev);
+    mpuGyroDmaSpiReadStart(&gyro.gyroSensor1.gyroDev);
 }
 #endif
 

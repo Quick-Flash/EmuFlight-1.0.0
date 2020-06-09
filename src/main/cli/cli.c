@@ -3598,17 +3598,6 @@ static void hex2byte(char *string, uint8_t *output)
 }
 #endif
 
-#ifdef MSP_OVER_CLI
-static void hex2byte(char *string, uint8_t *output)
-{
-    char tempBuff[3];
-    tempBuff[0] = string[0];
-    tempBuff[1] = string[1];
-    tempBuff[2] = 0;
-    *output = (uint8_t)strtol(tempBuff, NULL, 16);
-}
-#endif
-
 #ifdef USE_GYRO_IMUF9001
 
 static void cliImufBootloaderMode(char *cmdline)
@@ -6550,6 +6539,10 @@ typedef struct {
 }
 #endif
 
+#ifdef USE_GYRO_IMUF9001
+static void cliReportImufErrors(char *cmdline);
+#endif
+
 static void cliHelp(const char *cmdName, char *cmdline);
 
 // should be sorted a..z for bsearch()
@@ -6723,6 +6716,15 @@ const clicmd_t cmdTable[] = {
     CLI_COMMAND_DEF("vtxtable", "vtx frequency table", "<band> <bandname> <bandletter> [FACTORY|CUSTOM] <freq> ... <freq>\r\n", cliVtxTable),
 #endif
 };
+
+#ifdef USE_GYRO_IMUF9001
+static void cliReportImufErrors(char *cmdline)
+{
+    UNUSED(cmdline);
+    cliPrintf("Current Comm Errors: %lu", crcErrorCount);
+    cliPrintLinefeed();
+}
+#endif
 
 static void cliHelp(const char *cmdName, char *cmdline)
 {

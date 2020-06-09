@@ -562,7 +562,7 @@ static void serializeDataflashReadReply(sbuf_t *dst, uint32_t address, const uin
  * Returns true if the command was processd, false otherwise.
  * May set mspPostProcessFunc to a function to be called once the command has been processed
  */
-static bool mspCommonProcessOutCommand(int16_t cmdMSP, sbuf_t *dst, mspPostProcessFnPtr *mspPostProcessFn)
+bool mspCommonProcessOutCommand(uint8_t cmdMSP, sbuf_t *dst, mspPostProcessFnPtr *mspPostProcessFn)
 {
     UNUSED(mspPostProcessFn);
 
@@ -990,7 +990,7 @@ static bool mspCommonProcessOutCommand(int16_t cmdMSP, sbuf_t *dst, mspPostProce
     return true;
 }
 
-static bool mspProcessOutCommand(int16_t cmdMSP, sbuf_t *dst)
+bool mspProcessOutCommand(uint8_t cmdMSP, sbuf_t *dst)
 {
     bool unsupportedCommand = false;
 
@@ -2099,7 +2099,7 @@ static void mspFcDataFlashReadCommand(sbuf_t *dst, sbuf_t *src)
 }
 #endif
 
-static mspResult_e mspProcessInCommand(mspDescriptor_t srcDesc, int16_t cmdMSP, sbuf_t *src)
+mspResult_e mspProcessInCommand(uint8_t cmdMSP, sbuf_t *src)
 {
     uint32_t i;
     uint8_t value;
@@ -2928,7 +2928,7 @@ static mspResult_e mspProcessInCommand(mspDescriptor_t srcDesc, int16_t cmdMSP, 
                 disableRunawayTakeoff = sbufReadU8(src);
             }
             if (command) {
-                mspArmingDisableByDescriptor(srcDesc);
+                mspArmingDisableByDescriptor(src);
                 setArmingDisabled(ARMING_DISABLED_MSP);
                 if (ARMING_FLAG(ARMED)) {
                     disarm(DISARM_REASON_ARMING_DISABLED);
@@ -2937,7 +2937,7 @@ static mspResult_e mspProcessInCommand(mspDescriptor_t srcDesc, int16_t cmdMSP, 
                 runawayTakeoffTemporaryDisable(false);
 #endif
             } else {
-                mspArmingEnableByDescriptor(srcDesc);
+                mspArmingEnableByDescriptor(src);
                 if (mspIsMspArmingEnabled()) {
                     unsetArmingDisabled(ARMING_DISABLED_MSP);
 #ifdef USE_RUNAWAY_TAKEOFF
@@ -3291,7 +3291,7 @@ static mspResult_e mspProcessInCommand(mspDescriptor_t srcDesc, int16_t cmdMSP, 
     return MSP_RESULT_ACK;
 }
 
-static mspResult_e mspCommonProcessInCommand(mspDescriptor_t srcDesc, int16_t cmdMSP, sbuf_t *src, mspPostProcessFnPtr *mspPostProcessFn)
+mspResult_e mspCommonProcessInCommand(uint8_t cmdMSP, sbuf_t *src, mspPostProcessFnPtr *mspPostProcessFn)
 {
     UNUSED(mspPostProcessFn);
     const unsigned int dataSize = sbufBytesRemaining(src);
@@ -3533,7 +3533,7 @@ static mspResult_e mspCommonProcessInCommand(mspDescriptor_t srcDesc, int16_t cm
 #endif // OSD
 
     default:
-        return mspProcessInCommand(srcDesc, cmdMSP, src);
+        return mspProcessInCommand(cmdMSP, src);
     }
     return MSP_RESULT_ACK;
 }
@@ -3565,7 +3565,7 @@ mspResult_e mspFcProcessCommand(mspDescriptor_t srcDesc, mspPacket_t *cmd, mspPa
         ret = MSP_RESULT_ACK;
 #endif
     } else {
-        ret = mspCommonProcessInCommand(srcDesc, cmdMSP, src, mspPostProcessFn);
+        ret = mspCommonProcessInCommand(cmdMSP, src, mspPostProcessFn);
     }
     reply->result = ret;
     return ret;

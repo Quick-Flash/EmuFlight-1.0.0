@@ -43,8 +43,6 @@
 #include "fc/runtime_config.h"
 
 #include "sensors/boardalignment.h"
-#include "sensors/gyro.h"
-#include "sensors/acceleration.h"
 
 #ifdef USE_HAL_F7_CRC
 //CRC stuff should really go in a separate CRC driver, but only IMUF uses it
@@ -249,13 +247,13 @@ FAST_CODE static int imuf9001SendReceiveCommand(const gyroDev_t *gyro, gyroComma
     }
 
     command.command = commandToSend;
-    command.crc     = getCrcImuf9001((uint32_t *)&command, 11);;
+    command.crc     = getCrcImuf9001((uint32_t *)&command, 11);
 
 
     while (failCount-- > 0)
     {
         delayMicroseconds(1000);
-        if( IORead(IOGetByTag(IO_TAG(MPU_INT_EXTI))) ) //IMU is ready to talk
+        if( IORead(IOGetByTag(gyro->mpuIntExtiTag)) ) //IMU is ready to talk
         {
             failCount -= 100;
             if (imufSendReceiveSpiBlocking(&(gyro->bus), (uint8_t *)&command, (uint8_t *)reply, sizeof(imufCommand_t)))
@@ -278,7 +276,7 @@ FAST_CODE static int imuf9001SendReceiveCommand(const gyroDev_t *gyro, gyroComma
                         }
                         delayMicroseconds(1000); //give pin time to set
 
-                        if( IORead(IOGetByTag(IO_TAG(MPU_INT_EXTI))) ) //IMU is ready to talk
+                        if( IORead(IOGetByTag(gyro->mpuIntExtiTag)) ) //IMU is ready to talk
                         {
                             //reset attempts
                             attempt = 100;
@@ -487,12 +485,12 @@ uint8_t imuf9001SpiDetect(const gyroDev_t *gyro)
     crcConfig();
 
     //config exti as input, not exti for now
-    IOInit(IOGetByTag( IO_TAG(MPU_INT_EXTI) ), OWNER_MPU_EXTI, 0);
-    IOConfigGPIO(IOGetByTag( IO_TAG(MPU_INT_EXTI) ), IOCFG_IPD);
+    IOInit(IOGetByTag( gyro->mpuIntExtiTag ), OWNER_GYRO_EXTI, 0);
+    IOConfigGPIO(IOGetByTag( gyro->mpuIntExtiTag ), IOCFG_IPD);
 
     delayMicroseconds(100);
 
-    IOInit(gyro->bus.busdev_u.spi.csnPin, OWNER_MPU_CS, 0);
+    IOInit(gyro->bus.busdev_u.spi.csnPin, OWNER_GYRO_CS, 0);
     IOConfigGPIO(gyro->bus.busdev_u.spi.csnPin, SPI_IO_CS_CFG);
     IOHi(gyro->bus.busdev_u.spi.csnPin);
 

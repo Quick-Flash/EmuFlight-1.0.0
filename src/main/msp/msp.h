@@ -66,7 +66,7 @@ void mspInit(void);
 mspResult_e mspFcProcessCommand(mspDescriptor_t srcDesc, mspPacket_t *cmd, mspPacket_t *reply, mspPostProcessFnPtr *mspPostProcessFn);
 void mspFcProcessReply(mspPacket_t *reply);
 bool mspCommonProcessOutCommand(uint8_t cmdMSP, sbuf_t *dst, mspPostProcessFnPtr *mspPostProcessFn);
-mspResult_e mspCommonProcessInCommand(uint8_t cmdMSP, sbuf_t *dst, mspPostProcessFnPtr *mspPostProcessFn);
+mspResult_e mspCommonProcessInCommand(uint8_t cmdMSP, sbuf_t *src, mspPostProcessFnPtr *mspPostProcessFn);
 bool mspProcessOutCommand(uint8_t cmdMSP, sbuf_t *dst);
 mspResult_e mspProcessInCommand(uint8_t cmdMSP, sbuf_t *dst);
 mspDescriptor_t mspDescriptorAlloc(void);
