@@ -353,6 +353,7 @@ static const OSD_Entry cmsx_menuRFTPAEntries[] =
     { "75", OME_UINT8, NULL,                    &(OSD_UINT8_t)  { &rateProfile.raceflightTPA.kiAttenuationCurve[6], 0,  250,  1}, 0 },
     { "87.5", OME_UINT8, NULL,                  &(OSD_UINT8_t)  { &rateProfile.raceflightTPA.kiAttenuationCurve[7], 0,  250,  1}, 0 },
     { "100", OME_UINT8, NULL,                   &(OSD_UINT8_t)  { &rateProfile.raceflightTPA.kiAttenuationCurve[8], 0,  250,  1}, 0 },
+    { " ", OME_Label, NULL, NULL, 0 },
     { "-- KD --", OME_Label, NULL, NULL, 0 },
     { "0", OME_UINT8, NULL,                     &(OSD_UINT8_t)  { &rateProfile.raceflightTPA.kdAttenuationCurve[0], 0,  250,  1}, 0 },
     { "12.5", OME_UINT8, NULL,                  &(OSD_UINT8_t)  { &rateProfile.raceflightTPA.kdAttenuationCurve[1], 0,  250,  1}, 0 },
