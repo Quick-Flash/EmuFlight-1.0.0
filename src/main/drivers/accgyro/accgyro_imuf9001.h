@@ -18,8 +18,6 @@
 #pragma once
 
 #include "sensors/gyro.h"
-#include "sensors/acceleration.h"
-#include "drivers/bus.h"
 
 uint8_t imuf9001SpiDetect(const gyroDev_t *bus);
 
@@ -224,7 +222,7 @@ typedef enum gpioState
 } gpioState_t;
 
 extern volatile imuFrame_t imufQuat;
-volatile uint32_t isImufCalibrating;
+extern volatile uint32_t isImufCalibrating;
 
 extern void initImuf9001(void);
 extern uint32_t getCrcImuf9001(uint32_t* data, uint32_t size);
