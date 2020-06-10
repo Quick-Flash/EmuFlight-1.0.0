@@ -48,7 +48,7 @@ void pgResetFn_controlRateProfiles(controlRateConfig_t *controlRateConfig)
             .raceflightTPA = {
               {100, 100, 95, 95, 90, 95, 95, 100, 100}, // kp
               {100, 100, 100, 100, 110, 120, 130, 130, 130}, // ki
-              {100, 95, 90, 85, 80, 70, 60, 45, 30}, // kd
+              {100, 95, 90, 85, 85, 80, 80, 80, 85}, // kd
             },
             .thrMid8 = 50,
             .thrExpo8 = 0,

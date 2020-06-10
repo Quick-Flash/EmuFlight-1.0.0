@@ -118,7 +118,7 @@ static void BuildTPACurveThrottleLookupTables(void)
     }
 }
 
-static float ApplyAttenuationCurve (float inputAttn, uint8_t curve[], uint8_t curveSize)
+static float ApplyAttenuationCurve(float inputAttn, uint8_t curve[], uint8_t curveSize)
 {
     // curve needs to be float'd
     float floatCurve[curveSize];
@@ -950,7 +950,7 @@ void initRcProcessing(void)
 
         break;
     }
-    
+
     BuildTPACurveThrottleLookupTables();
 
 #ifdef USE_YAW_SPIN_RECOVERY
