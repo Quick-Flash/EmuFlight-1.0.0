@@ -210,6 +210,7 @@ void resetPidProfile(pidProfile_t *pidProfile)
         .dyn_lpf_curve_expo = 5,
         .level_race_mode = false,
         .vbat_sag_compensation = 0,
+        .i_decay = 4,
     );
 #ifndef USE_D_MIN
     pidProfile->pid[PID_ROLL].D = 30;
@@ -922,7 +923,6 @@ void FAST_CODE pidController(const pidProfile_t *pidProfile, timeUs_t currentTim
             &currentPidSetpoint, &errorRate);
 #endif
 
-        const float previousIterm = pidData[axis].I;
         float itermErrorRate = errorRate;
 #ifdef USE_ABSOLUTE_CONTROL
         float uncorrectedSetpoint = currentPidSetpoint;
@@ -930,7 +930,7 @@ void FAST_CODE pidController(const pidProfile_t *pidProfile, timeUs_t currentTim
 
 #if defined(USE_ITERM_RELAX)
         if (!launchControlActive && !pidRuntime.inCrashRecoveryMode) {
-            applyItermRelax(axis, previousIterm, gyroRate, &itermErrorRate, &currentPidSetpoint);
+            applyItermRelax(axis, pidData[axis].I, gyroRate, &itermErrorRate, &currentPidSetpoint);
             errorRate = currentPidSetpoint - gyroRate;
         }
 #endif
@@ -951,6 +951,8 @@ void FAST_CODE pidController(const pidProfile_t *pidProfile, timeUs_t currentTim
         // -----calculate I component
         float Ki;
         float axisDynCi;
+        float iterm;
+        float itermNew;
 #ifdef USE_LAUNCH_CONTROL
         // if launch control is active override the iterm gains and apply iterm windup protection to all axes
         if (launchControlActive) {
@@ -963,7 +965,19 @@ void FAST_CODE pidController(const pidProfile_t *pidProfile, timeUs_t currentTim
             axisDynCi = (axis == FD_YAW) ? dynCi : pidRuntime.dT; // only apply windup protection to yaw
         }
 
-        pidData[axis].I = constrainf(previousIterm + (Ki * axisDynCi + agGain) * itermErrorRate, -pidRuntime.itermLimit, pidRuntime.itermLimit);
+        iterm    = pidData[axis].I;
+        itermNew = (Ki * axisDynCi + agGain) * itermErrorRate;
+
+        if (SIGN(iterm) != SIGN(itermNew))
+        {
+        	  const float newVal = itermNew * pidProfile->i_decay;
+        	  if (fabs(iterm) > fabs(newVal))
+        	  {
+            		itermNew = newVal;
+        	  }
+        }
+
+        pidData[axis].I = constrainf(iterm + itermNew, -pidRuntime.itermLimit, pidRuntime.itermLimit);
 
         // -----calculate pidSetpointDelta
         float pidSetpointDelta = 0;

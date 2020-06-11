@@ -136,8 +136,9 @@ typedef struct pidProfile_s {
     uint8_t horizon_tilt_effect;            // inclination factor for Horizon mode
     uint8_t horizon_tilt_expert_mode;       // OFF or ON
 
-    // Betaflight PID controller parameters
-    uint8_t  antiGravityMode;             // type of anti gravity method
+    // EmuFlight PID controller parameters
+    uint8_t i_decay;						            // i-term decay (increases how quickly iterm shrinks in value)
+    uint8_t  antiGravityMode;               // type of anti gravity method
     uint16_t itermThrottleThreshold;        // max allowed throttle delta before iterm accelerated in ms
     uint16_t itermAcceleratorGain;          // Iterm Accelerator Gain when itermThrottlethreshold is hit
     uint16_t yawRateAccelLimit;             // yaw accel limiter for deg/sec/ms
