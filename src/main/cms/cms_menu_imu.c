@@ -212,7 +212,7 @@ static const OSD_Entry cmsx_menuPidEntries[] =
 {
     { "-- PID --", OME_Label, NULL, pidProfileIndexString, 0},
 
-    { "ERROR BOOST", OME_UINT16, NULL, &(OSD_UINT16_t){ &errorBoost,      0,  5000, 5}, 0 },
+    { "EMU BOOST",   OME_UINT16, NULL, &(OSD_UINT16_t){ &errorBoost,      0,  5000, 5}, 0 },
     { "BOOST LIMIT", OME_UINT8, NULL, &(OSD_UINT8_t){ &errorBoostLimit,   0,  250,  1}, 0 },
 
     { "ROLL  P", OME_UINT8, NULL, &(OSD_UINT8_t){ &tempPid[PID_ROLL][0],  0, 200, 1 }, 0 },
@@ -225,7 +225,7 @@ static const OSD_Entry cmsx_menuPidEntries[] =
     { "PITCH D", OME_UINT8, NULL, &(OSD_UINT8_t){ &tempPid[PID_PITCH][2], 0, 200, 1 }, 0 },
     { "PITCH F", OME_UINT16, NULL, &(OSD_UINT16_t){ &tempPidF[PID_PITCH], 0, 2000, 1 }, 0 },
 
-    { "ERROR BOOST YAW", OME_UINT16, NULL, &(OSD_UINT16_t){ &errorBoostYaw,      0,  5000, 5}, 0 },
+    { "EMU BOOST YAW",   OME_UINT16, NULL, &(OSD_UINT16_t){ &errorBoostYaw,      0,  5000, 5}, 0 },
     { "BOOST LIMIT YAW", OME_UINT8, NULL, &(OSD_UINT8_t){ &errorBoostLimitYaw,   0,  250,  1}, 0 },
 
     { "YAW   P", OME_UINT8, NULL, &(OSD_UINT8_t){ &tempPid[PID_YAW][0],   0, 200, 1 }, 0 },
