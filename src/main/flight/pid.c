@@ -760,15 +760,11 @@ static FAST_CODE_NOINLINE float applyLaunchControl(int axis, const rollAndPitchT
 }
 #endif
 
-static FAST_CODE float applyErrorBoost(float errorMultiplier, float errorBoostLimit, float errorRate)
+static FAST_CODE float applyEmuBoost(float emuBoost, float emuBoostLimit, float errorRate)
 {
-  float boostedErrorRate;
+	const float boost = (errorRate * errorRate) * emuBoost;
 
-  boostedErrorRate = (errorRate * fabsf(errorRate)) * errorMultiplier;
-
-  boostedErrorRate = constrainf(boostedErrorRate, 0.0f, fabsf(errorRate * errorBoostLimit));
-
-  return boostedErrorRate;
+	return 1.0f + MIN(boost, emuBoostLimit);
 }
 
 // Betaflight pid controller, which will be maintained in the future with additional features specialised for current (mini) multirotor usage.
@@ -954,11 +950,11 @@ void FAST_CODE pidController(const pidProfile_t *pidProfile, timeUs_t currentTim
 
         if (axis != YAW)
         {
-          ptermErrorBoost = applyErrorBoost(pidRuntime.errorMultiplier, pidRuntime.errorBoostLimit, errorRate);
-          itermErrorBoost = applyErrorBoost(pidRuntime.errorMultiplier, pidRuntime.errorBoostLimit, itermErrorRate);
+          ptermErrorBoost = applyEmuBoost(pidRuntime.emuBoost, pidRuntime.emuBoostLimit, errorRate);
+          itermErrorBoost = applyEmuBoost(pidRuntime.emuBoost, pidRuntime.emuBoostLimit, itermErrorRate);
         } else {
-          ptermErrorBoost = applyErrorBoost(pidRuntime.errorMultiplierYaw, pidRuntime.errorBoostLimitYaw, errorRate);
-          itermErrorBoost = applyErrorBoost(pidRuntime.errorMultiplierYaw, pidRuntime.errorBoostLimitYaw, itermErrorRate);
+          ptermErrorBoost = applyEmuBoost(pidRuntime.emuBoostYaw, pidRuntime.emuBoostLimitYaw, errorRate);
+          itermErrorBoost = applyEmuBoost(pidRuntime.emuBoostYaw, pidRuntime.emuBoostLimitYaw, itermErrorRate);
         }
 
         // --------low-level gyro-based PID based on 2DOF PID controller. ----------
@@ -966,7 +962,7 @@ void FAST_CODE pidController(const pidProfile_t *pidProfile, timeUs_t currentTim
         // b = 1 and only c (feedforward weight) can be tuned (amount derivative on measurement or error).
 
         // -----calculate P component
-        pidData[axis].P = pidRuntime.pidCoefficient[axis].Kp * (errorRate + ptermErrorBoost) * tpaFactorKp;
+        pidData[axis].P = pidRuntime.pidCoefficient[axis].Kp * errorRate * ptermErrorBoost * tpaFactorKp;
         if (axis == FD_YAW) {
             pidData[axis].P = pidRuntime.ptermYawLowpassApplyFn((filter_t *) &pidRuntime.ptermYawLowpass, pidData[axis].P);
         }
@@ -986,7 +982,7 @@ void FAST_CODE pidController(const pidProfile_t *pidProfile, timeUs_t currentTim
             axisDynCi = (axis == FD_YAW) ? dynCi : pidRuntime.dT; // only apply windup protection to yaw
         }
 
-        pidData[axis].I = constrainf(previousIterm + (Ki * axisDynCi + agGain) * (itermErrorRate + itermErrorBoost), -pidRuntime.itermLimit, pidRuntime.itermLimit);
+        pidData[axis].I = constrainf(previousIterm + (Ki * axisDynCi + agGain) * itermErrorRate * itermErrorBoost, -pidRuntime.itermLimit, pidRuntime.itermLimit);
 
         // -----calculate pidSetpointDelta
         float pidSetpointDelta = 0;

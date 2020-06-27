@@ -290,10 +290,10 @@ typedef struct pidRuntime_s {
     bool zeroThrottleItermReset;
     bool levelRaceMode;
 
-    float errorMultiplier;
-    float errorBoostLimit;
-    float errorMultiplierYaw;
-    float errorBoostLimitYaw;
+    float emuBoost;
+    float emuBoostLimit;
+    float emuBoostYaw;
+    float emuBoostLimitYaw;
 
 #ifdef USE_ITERM_RELAX
     pt1Filter_t windupLpf[XYZ_AXIS_COUNT];

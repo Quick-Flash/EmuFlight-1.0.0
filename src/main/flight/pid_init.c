@@ -297,10 +297,10 @@ void pidInitConfig(const pidProfile_t *pidProfile)
     pidRuntime.crashSetpointThreshold = pidProfile->crash_setpoint_threshold;
     pidRuntime.crashLimitYaw = pidProfile->crash_limit_yaw;
     pidRuntime.itermLimit = pidProfile->itermLimit;
-    pidRuntime.errorMultiplier = pidProfile->error_boost * pidProfile->error_boost * 3e-9;
-    pidRuntime.errorBoostLimit = pidProfile->error_boost_limit / 100.0f;
-    pidRuntime.errorMultiplierYaw = pidProfile->error_boost_yaw * pidProfile->error_boost_yaw * 3e-9;
-    pidRuntime.errorBoostLimitYaw = pidProfile->error_boost_limit_yaw / 100.0f;
+    pidRuntime.emuBoost = pidProfile->error_boost * pidProfile->error_boost * 3e-9;
+    pidRuntime.emuBoostLimit = pidProfile->error_boost_limit / 100.0f;
+    pidRuntime.emuBoostYaw = pidProfile->error_boost_yaw * pidProfile->error_boost_yaw * 3e-9;
+    pidRuntime.emuBoostLimitYaw = pidProfile->error_boost_limit_yaw / 100.0f;
 
 #if defined(USE_THROTTLE_BOOST)
     throttleBoost = pidProfile->throttle_boost * 0.1f;
