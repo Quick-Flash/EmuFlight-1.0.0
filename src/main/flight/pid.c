@@ -49,6 +49,7 @@
 #include "flight/mixer.h"
 #include "flight/rpm_filter.h"
 #include "flight/interpolated_setpoint.h"
+#include "common/lqg.h"
 
 #include "io/gps.h"
 
@@ -130,6 +131,11 @@ void resetPidProfile(pidProfile_t *pidProfile)
             [PID_YAW] =   { 45, 90, 0, 90 },
             [PID_LEVEL] = { 50, 50, 75, 0 },
             [PID_MAG] =   { 40, 0, 0, 0 },
+        },
+        .lqg = {
+            [FD_ROLL] =  { 1, 100, 300, 100, 30, 100, 250, 200, 150, 14 },
+            [FD_PITCH] = { 1, 100, 300, 100, 30, 100, 250, 200, 150, 14 },
+            [FD_YAW] =   { 20, 100, 300, 100, 30, 100, 250, 200, 150, 14 },
         },
         .pidSumLimit = PIDSUM_LIMIT,
         .pidSumLimitYaw = PIDSUM_LIMIT_YAW,
@@ -707,11 +713,9 @@ static FAST_CODE_NOINLINE float applyLaunchControl(int axis, const rollAndPitchT
 // Based on 2DOF reference design (matlab)
 void FAST_CODE pidController(const pidProfile_t *pidProfile)
 {
-    static float previousGyroRateDterm[XYZ_AXIS_COUNT];
 #ifdef USE_INTERPOLATED_SP
     static FAST_RAM_ZERO_INIT uint32_t lastFrameNumber;
 #endif
-    static float previousRawGyroRateDterm[XYZ_AXIS_COUNT];
 
     const float tpaFactor = getThrottlePIDAttenuation();
 
@@ -746,50 +750,6 @@ void FAST_CODE pidController(const pidProfile_t *pidProfile)
         levelMode = LEVEL_MODE_OFF;
     }
 #endif
-
-    // Dynamic i component,
-    if ((pidRuntime.antiGravityMode == ANTI_GRAVITY_SMOOTH) && pidRuntime.antiGravityEnabled) {
-        pidRuntime.itermAccelerator = fabsf(pidRuntime.antiGravityThrottleHpf) * 0.01f * (pidRuntime.itermAcceleratorGain - 1000);
-        DEBUG_SET(DEBUG_ANTI_GRAVITY, 1, lrintf(pidRuntime.antiGravityThrottleHpf * 1000));
-    }
-    DEBUG_SET(DEBUG_ANTI_GRAVITY, 0, lrintf(pidRuntime.itermAccelerator * 1000));
-
-    float agGain = pidRuntime.dT * pidRuntime.itermAccelerator * AG_KI;
-
-    // gradually scale back integration when above windup point
-    float dynCi = pidRuntime.dT;
-    if (pidRuntime.itermWindupPointInv > 1.0f) {
-        dynCi *= constrainf((1.0f - getMotorMixRange()) * pidRuntime.itermWindupPointInv, 0.0f, 1.0f);
-    }
-
-    // Precalculate gyro deta for D-term here, this allows loop unrolling
-    float gyroRateDterm[XYZ_AXIS_COUNT];
-    for (int axis = FD_ROLL; axis <= FD_YAW; ++axis) {
-        gyroRateDterm[axis] = gyro.gyroADCf[axis];
-        // -----calculate raw, unfiltered D component
-
-        // Divide rate change by dT to get differential (ie dr/dt).
-        // dT is fixed and calculated from the target PID loop time
-        // This is done to avoid DTerm spikes that occur with dynamically
-        // calculated deltaT whenever another task causes the PID
-        // loop execution to be delayed.
-        const float delta =
-            - (gyroRateDterm[axis] - previousRawGyroRateDterm[axis]) * pidRuntime.pidFrequency / D_LPF_RAW_SCALE;
-        previousRawGyroRateDterm[axis] = gyroRateDterm[axis];
-
-        // Log the unfiltered D
-        if (axis == FD_ROLL) {
-            DEBUG_SET(DEBUG_D_LPF, 0, lrintf(delta));
-        } else if (axis == FD_PITCH) {
-            DEBUG_SET(DEBUG_D_LPF, 1, lrintf(delta));
-        }
-
-        gyroRateDterm[axis] = pidRuntime.dtermNotchApplyFn((filter_t *) &pidRuntime.dtermNotch[axis], gyroRateDterm[axis]);
-        gyroRateDterm[axis] = pidRuntime.dtermLowpassApplyFn((filter_t *) &pidRuntime.dtermLowpass[axis], gyroRateDterm[axis]);
-        gyroRateDterm[axis] = pidRuntime.dtermLowpass2ApplyFn((filter_t *) &pidRuntime.dtermLowpass2[axis], gyroRateDterm[axis]);
-    }
-
-    rotateItermAndAxisError();
 
 #ifdef USE_RPM_FILTER
     rpmFilterUpdate();
@@ -859,49 +819,6 @@ void FAST_CODE pidController(const pidProfile_t *pidProfile)
         const float gyroRate = gyro.gyroADCf[axis]; // Process variable from gyro output in deg/sec
         float errorRate = currentPidSetpoint - gyroRate; // r - y
 
-        const float previousIterm = pidData[axis].I;
-        float itermErrorRate = errorRate;
-#ifdef USE_ABSOLUTE_CONTROL
-        float uncorrectedSetpoint = currentPidSetpoint;
-#endif
-
-#if defined(USE_ITERM_RELAX)
-        if (!launchControlActive) {
-            applyItermRelax(axis, previousIterm, gyroRate, &itermErrorRate, &currentPidSetpoint);
-            errorRate = currentPidSetpoint - gyroRate;
-        }
-#endif
-#ifdef USE_ABSOLUTE_CONTROL
-        float setpointCorrection = currentPidSetpoint - uncorrectedSetpoint;
-#endif
-
-        // --------low-level gyro-based PID based on 2DOF PID controller. ----------
-        // 2-DOF PID controller with optional filter on derivative term.
-        // b = 1 and only c (feedforward weight) can be tuned (amount derivative on measurement or error).
-
-        // -----calculate P component
-        pidData[axis].P = pidRuntime.pidCoefficient[axis].Kp * errorRate * tpaFactorKp;
-        if (axis == FD_YAW) {
-            pidData[axis].P = pidRuntime.ptermYawLowpassApplyFn((filter_t *) &pidRuntime.ptermYawLowpass, pidData[axis].P);
-        }
-
-        // -----calculate I component
-        float Ki;
-        float axisDynCi;
-#ifdef USE_LAUNCH_CONTROL
-        // if launch control is active override the iterm gains and apply iterm windup protection to all axes
-        if (launchControlActive) {
-            Ki = pidRuntime.launchControlKi;
-            axisDynCi = dynCi;
-        } else
-#endif
-        {
-            Ki = pidRuntime.pidCoefficient[axis].Ki;
-            axisDynCi = (axis == FD_YAW) ? dynCi : pidRuntime.dT; // only apply windup protection to yaw
-        }
-
-        pidData[axis].I = constrainf(previousIterm + (Ki * axisDynCi + agGain) * itermErrorRate, -pidRuntime.itermLimit, pidRuntime.itermLimit);
-
         // -----calculate pidSetpointDelta
         float pidSetpointDelta = 0;
 #ifdef USE_INTERPOLATED_SP
@@ -920,72 +837,10 @@ void FAST_CODE pidController(const pidProfile_t *pidProfile)
         pidSetpointDelta = applyRcSmoothingDerivativeFilter(axis, pidSetpointDelta);
 #endif // USE_RC_SMOOTHING_FILTER
 
-        // -----calculate D component
-        // disable D if launch control is active
-        if ((pidRuntime.pidCoefficient[axis].Kd > 0) && !launchControlActive) {
-
-            // Divide rate change by dT to get differential (ie dr/dt).
-            // dT is fixed and calculated from the target PID loop time
-            // This is done to avoid DTerm spikes that occur with dynamically
-            // calculated deltaT whenever another task causes the PID
-            // loop execution to be delayed.
-            const float delta =
-                - (gyroRateDterm[axis] - previousGyroRateDterm[axis]) * pidRuntime.pidFrequency;
-            float preTpaData = pidRuntime.pidCoefficient[axis].Kd * delta;
-
-#if defined(USE_D_MIN)
-            float dMinFactor = 1.0f;
-            if (pidRuntime.dMinPercent[axis] > 0) {
-                float dMinGyroFactor = biquadFilterApply(&pidRuntime.dMinRange[axis], delta);
-                dMinGyroFactor = fabsf(dMinGyroFactor) * pidRuntime.dMinGyroGain;
-                const float dMinSetpointFactor = (fabsf(pidSetpointDelta)) * pidRuntime.dMinSetpointGain;
-                dMinFactor = MAX(dMinGyroFactor, dMinSetpointFactor);
-                dMinFactor = pidRuntime.dMinPercent[axis] + (1.0f - pidRuntime.dMinPercent[axis]) * dMinFactor;
-                dMinFactor = pt1FilterApply(&pidRuntime.dMinLowpass[axis], dMinFactor);
-                dMinFactor = MIN(dMinFactor, 1.0f);
-                if (axis == FD_ROLL) {
-                    DEBUG_SET(DEBUG_D_MIN, 0, lrintf(dMinGyroFactor * 100));
-                    DEBUG_SET(DEBUG_D_MIN, 1, lrintf(dMinSetpointFactor * 100));
-                    DEBUG_SET(DEBUG_D_MIN, 2, lrintf(pidRuntime.pidCoefficient[axis].Kd * dMinFactor * 10 / DTERM_SCALE));
-                } else if (axis == FD_PITCH) {
-                    DEBUG_SET(DEBUG_D_MIN, 3, lrintf(pidRuntime.pidCoefficient[axis].Kd * dMinFactor * 10 / DTERM_SCALE));
-                }
-            }
-
-            // Apply the dMinFactor
-            preTpaData *= dMinFactor;
-#endif
-            pidData[axis].D = preTpaData * tpaFactor;
-
-            // Log the value of D pre application of TPA
-            preTpaData *= D_LPF_FILT_SCALE;
-
-            if (axis == FD_ROLL) {
-                DEBUG_SET(DEBUG_D_LPF, 2, lrintf(preTpaData));
-            } else if (axis == FD_PITCH) {
-                DEBUG_SET(DEBUG_D_LPF, 3, lrintf(preTpaData));
-            }
-        } else {
-            pidData[axis].D = 0;
-
-            if (axis == FD_ROLL) {
-                DEBUG_SET(DEBUG_D_LPF, 2, 0);
-            } else if (axis == FD_PITCH) {
-                DEBUG_SET(DEBUG_D_LPF, 3, 0);
-            }
-        }
-
-        previousGyroRateDterm[axis] = gyroRateDterm[axis];
-
 #if defined(USE_ACC)
-            detectAndSetCrashRecovery(pidProfile->crash_recovery, axis, pidData[axis].D, errorRate);
+          //  detectAndSetCrashRecovery(pidProfile->crash_recovery, axis, pidData[axis].D, errorRate);
 #endif
         // -----calculate feedforward component
-#ifdef USE_ABSOLUTE_CONTROL
-        // include abs control correction in FF
-        pidSetpointDelta += setpointCorrection - pidRuntime.oldSetpointCorrection[axis];
-        pidRuntime.oldSetpointCorrection[axis] = setpointCorrection;
-#endif
 
         // Only enable feedforward for rate mode and if launch control is inactive
         const float feedforwardGain = (flightModeFlags || launchControlActive) ? 0.0f : pidRuntime.pidCoefficient[axis].Kf;
@@ -1022,7 +877,6 @@ void FAST_CODE pidController(const pidProfile_t *pidProfile)
             // if not using FULL mode then disable I accumulation on yaw as
             // yaw has a tendency to windup. Otherwise limit yaw iterm accumulation.
             const int launchControlYawItermLimit = (pidRuntime.launchControlMode == LAUNCH_CONTROL_MODE_FULL) ? LAUNCH_CONTROL_YAW_ITERM_LIMIT : 0;
-            pidData[FD_YAW].I = constrainf(pidData[FD_YAW].I, -launchControlYawItermLimit, launchControlYawItermLimit);
 
             // for pitch-only mode we disable everything except pitch P/I
             if (pidRuntime.launchControlMode == LAUNCH_CONTROL_MODE_PITCHONLY) {
@@ -1034,14 +888,14 @@ void FAST_CODE pidController(const pidProfile_t *pidProfile)
             }
         }
 #endif
+        lqg_run_covariance(&pidRuntime.rtkf[axis], &pidRuntime.lqr[axis]);
         // calculating the PID sum
+        // need to fix this refactor a lot of code, but multiply this by 1000 so that these gains are correct otherwise the ff would be wrong as well. oh well.
+        pidData[axis].P = lqg_controller(&pidRuntime.rtkf[axis], &pidRuntime.lqr[axis], gyroRate, currentPidSetpoint) * 1000;
+        pidData[axis].I = 0;
+        pidData[axis].D = 0;
+
         const float pidSum = pidData[axis].P + pidData[axis].I + pidData[axis].D + pidData[axis].F;
-#ifdef USE_INTEGRATED_YAW_CONTROL
-        if (axis == FD_YAW && pidRuntime.useIntegratedYaw) {
-            pidData[axis].Sum += pidSum * pidRuntime.dT * 100.0f;
-            pidData[axis].Sum -= pidData[axis].Sum * pidRuntime.integratedYawRelax / 100000.0f * pidRuntime.dT / 0.000125f;
-        } else
-#endif
         {
             pidData[axis].Sum = pidSum;
         }
@@ -1058,8 +912,6 @@ void FAST_CODE pidController(const pidProfile_t *pidProfile)
 
             pidData[axis].Sum = 0;
         }
-    } else if (pidRuntime.zeroThrottleItermReset) {
-        pidResetIterm();
     }
 }
 

@@ -28,7 +28,7 @@
 #define VARIANCE_SCALE 0.67f
 
 
-typedef struct kalman
+typedef struct kalman_s
 {
     float q;     //process noise covariance
     float r;     //measurement noise covariance

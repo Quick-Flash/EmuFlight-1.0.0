@@ -40,6 +40,7 @@
 #include "flight/interpolated_setpoint.h"
 #include "flight/pid.h"
 #include "flight/rpm_filter.h"
+#include "common/lqg.h"
 
 #include "sensors/gyro.h"
 #include "sensors/sensors.h"
@@ -266,6 +267,12 @@ void pidInitConfig(const pidProfile_t *pidProfile)
         pidRuntime.pidCoefficient[axis].Ki = ITERM_SCALE * pidProfile->pid[axis].I;
         pidRuntime.pidCoefficient[axis].Kd = DTERM_SCALE * pidProfile->pid[axis].D;
         pidRuntime.pidCoefficient[axis].Kf = FEEDFORWARD_SCALE * (pidProfile->pid[axis].F / 100.0f);
+
+        rtkf_create(&pidRuntime.rtkf[axis], pidProfile->lqg[axis].beta / 1000.0f, pidProfile->lqg[axis].tau / 1000.0f, pidRuntime.dT,
+        pidProfile->lqg[axis].RTKF_R / 10.0f, pidProfile->lqg[axis].RTKF_Q1 / 100.0f, pidProfile->lqg[axis].RTKF_Q2 / 100000000.0f,
+        pidProfile->lqg[axis].RTKF_Q3 / 100000000.0f, pidProfile->lqg[axis].biasLimit / 100.0f);
+        lqr_create(&pidRuntime.lqr[axis], pidProfile->lqg[axis].beta / 1000.0f, pidProfile->lqg[axis].tau / 1000.0f, pidRuntime.dT,
+        pidProfile->lqg[axis].LQR_Q1 / 10000000.0f, pidProfile->lqg[axis].LQR_Q2 / 1000000.0f, pidProfile->lqg[axis].LQR_R / 100.0f);
     }
 #ifdef USE_INTEGRATED_YAW_CONTROL
     if (!pidProfile->use_integrated_yaw)

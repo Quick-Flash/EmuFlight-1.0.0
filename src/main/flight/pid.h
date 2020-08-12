@@ -25,6 +25,8 @@
 #include "common/filter.h"
 #include "common/axis.h"
 
+#include "common/lqg.h"
+
 #include "pg/pg.h"
 
 #define MAX_PID_PROCESS_DENOM       16
@@ -86,6 +88,19 @@ typedef struct pidf_s {
     uint16_t F;
 } pidf_t;
 
+typedef struct lqg_s {
+    uint16_t RTKF_R;
+    uint16_t RTKF_Q1;
+    uint16_t RTKF_Q2;
+    uint16_t RTKF_Q3;
+    uint16_t biasLimit;
+    uint16_t LQR_R;
+    uint16_t LQR_Q1;
+    uint16_t LQR_Q2;
+    uint16_t beta;
+    uint16_t tau;
+} lqg_t;
+
 typedef enum {
     ANTI_GRAVITY_SMOOTH,
     ANTI_GRAVITY_STEP
@@ -123,6 +138,7 @@ typedef struct pidProfile_s {
     uint16_t dterm_notch_cutoff;            // Biquad dterm notch low cutoff
 
     pidf_t  pid[PID_ITEM_COUNT];
+    lqg_t   lqg[XYZ_AXIS_COUNT];
 
     uint8_t dterm_filter_type;              // Filter selection for dterm
     uint8_t itermWindupPointPercent;        // iterm windup threshold, percent motor saturation
@@ -244,6 +260,10 @@ typedef struct pidRuntime_s {
     dtermLowpass_t dtermLowpass2[XYZ_AXIS_COUNT];
     filterApplyFnPtr ptermYawLowpassApplyFn;
     pt1Filter_t ptermYawLowpass;
+
+    rtkf_state_t rtkf[XYZ_AXIS_COUNT];
+    lqr_state_t lqr[XYZ_AXIS_COUNT];
+
     bool antiGravityEnabled;
     uint8_t antiGravityMode;
     pt1Filter_t antiGravityThrottleLpf;
