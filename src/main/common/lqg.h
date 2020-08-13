@@ -34,8 +34,6 @@
 #define LQG_SOLVER_DONE 1
 
 typedef struct lqr_state_s {
-	int16_t solver_iterations;
-
 	float A[2][2];
 	float B[2];
 	float K[2];
@@ -49,8 +47,6 @@ typedef struct lqr_state_s {
 } lqr_state_t;
 
 typedef struct rtkf_state_s {
-	int solver_iterations;
-
 	float A[3][3];
 	float B[3];
 	float K[3];
@@ -63,11 +59,9 @@ typedef struct rtkf_state_s {
 } rtkf_state_t;
 
 extern void rtkf_create(rtkf_state_t *rtkf, float beta, float tau, float Ts, float R, float Q1, float Q2, float Q3, float biaslim);
-extern void rtkf_stabilize_covariance(rtkf_state_t *rtkf);
 // extern int rtkf_solver_status(rtkf_state_t *rtkf);
 
 extern void lqr_create(lqr_state_t *lqr, float beta, float tau, float Ts, float q1, float q2, float r);
-extern void lqr_stabilize_covariance(lqr_state_t *lqr);
 // extern int lqr_solver_status(lqr_state_t *lqr);
 
 extern void lqr_update(lqr_state_t *lqr, float q1, float q2, float r);
@@ -76,6 +70,8 @@ extern void lqr_get_gains(lqr_state_t *lqr, float K[2]);
 // extern int lqg_solver_status(lqg_t lqg);
 // extern lqr_t lqg_get_lqr(lqg_t lqg);
 // extern rtkf_t lqg_get_rtkf(lqg_t lqg);
+
+extern void lqg_initialize_p_and_k(rtkf_state_t *rtkf, lqr_state_t *lqr);
 
 extern void lqg_run_covariance(rtkf_state_t *rtkf, lqr_state_t *lqg);
 

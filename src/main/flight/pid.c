@@ -133,9 +133,9 @@ void resetPidProfile(pidProfile_t *pidProfile)
             [PID_MAG] =   { 40, 0, 0, 0 },
         },
         .lqg = {
-            [FD_ROLL] =  { 1, 100, 300, 100, 30, 100, 250, 200, 150, 14 },
-            [FD_PITCH] = { 1, 100, 300, 100, 30, 100, 250, 200, 150, 14 },
-            [FD_YAW] =   { 20, 100, 300, 100, 30, 100, 250, 200, 150, 14 },
+            [FD_ROLL] =  { 500, 100, 300, 100, 15, 100, 250, 200, 150, 14 },
+            [FD_PITCH] = { 500, 100, 300, 100, 15, 100, 250, 200, 150, 14 },
+            [FD_YAW] =   { 1250, 100, 300, 100, 15, 100, 250, 1000, 150, 14 },
         },
         .pidSumLimit = PIDSUM_LIMIT,
         .pidSumLimitYaw = PIDSUM_LIMIT_YAW,
@@ -891,7 +891,7 @@ void FAST_CODE pidController(const pidProfile_t *pidProfile)
         lqg_run_covariance(&pidRuntime.rtkf[axis], &pidRuntime.lqr[axis]);
         // calculating the PID sum
         // need to fix this refactor a lot of code, but multiply this by 1000 so that these gains are correct otherwise the ff would be wrong as well. oh well.
-        pidData[axis].P = lqg_controller(&pidRuntime.rtkf[axis], &pidRuntime.lqr[axis], gyroRate, currentPidSetpoint) * 1000;
+        pidData[axis].P = lqg_controller(&pidRuntime.rtkf[axis], &pidRuntime.lqr[axis], gyroRate, currentPidSetpoint) * 500;
         pidData[axis].I = 0;
         pidData[axis].D = 0;
 

@@ -273,6 +273,7 @@ void pidInitConfig(const pidProfile_t *pidProfile)
         pidProfile->lqg[axis].RTKF_Q3 / 100000000.0f, pidProfile->lqg[axis].biasLimit / 100.0f);
         lqr_create(&pidRuntime.lqr[axis], pidProfile->lqg[axis].beta / 1000.0f, pidProfile->lqg[axis].tau / 1000.0f, pidRuntime.dT,
         pidProfile->lqg[axis].LQR_Q1 / 10000000.0f, pidProfile->lqg[axis].LQR_Q2 / 1000000.0f, pidProfile->lqg[axis].LQR_R / 100.0f);
+        lqg_initialize_p_and_k(&pidRuntime.rtkf[axis], &pidRuntime.lqr[axis]);
     }
 #ifdef USE_INTEGRATED_YAW_CONTROL
     if (!pidProfile->use_integrated_yaw)

@@ -176,17 +176,6 @@ FAST_CODE int rtkf_calculate_covariance_3x3(float A[3][3], float K[3], float P[3
 	Repeat the Kalman covariance cycle for specified amount of iterations.
 	Tests show that 50 iterations should be plenty to become stable.
 */
- FAST_CODE void rtkf_stabilize_covariance(rtkf_state_t *rtkf)
- {
-	for (int i = 0; i < 1; i++) {
-		rtkf->solver_iterations++;
-		if (rtkf_calculate_covariance_3x3(rtkf->A, rtkf->K, rtkf->P, rtkf->Q, rtkf->R) && rtkf->solver_iterations > SOLVER_MIN) {
-			rtkf->solver_iterations = 0;
-			break;
-		}
- 	}
-	rtkf->solver_iterations = 0;
- }
 
 /*
 	Kalman prediction
@@ -345,17 +334,6 @@ FAST_CODE int lqr_calculate_covariance_2x2(float A[2][2], float B[2], float K[2]
 	Changing the Q state weight matrix in middle operation usually seems to restabilize within
 	a 100 cycles, so TxPID for tuning might qualify.
 */
-FAST_CODE void lqr_stabilize_covariance(lqr_state_t *lqr)
-{
-	for (int i = 0; i < 10; i++) {
-		lqr->solver_iterations++;
-		if (lqr_calculate_covariance_2x2(lqr->A, lqr->B, lqr->K, lqr->P, lqr->Q, lqr->R) && lqr->solver_iterations > SOLVER_MIN) {
-			lqr->solver_iterations = 0;
-			break;
-		}
-	}
-	lqr->solver_iterations = 0;
-}
 
 // int lqr_solver_status(lqr_t lqr)
 // {
@@ -407,7 +385,6 @@ void lqr_update(lqr_state_t *lqr, float q1, float q2, float r)
 	lqr->Q00 = q1;
 	lqr->Q11 = q2*expf(lqr->beta);
 	lqr->R = r;
-	lqr->solver_iterations = 0;
 }
 
 void lqr_get_gains(lqr_state_t *lqr, float K[2])
@@ -466,8 +443,27 @@ FAST_CODE float lqg_controller(rtkf_state_t *rtkf, lqr_state_t *lqr, float signa
 
 FAST_CODE void lqg_run_covariance(rtkf_state_t *rtkf, lqr_state_t *lqr)
 {
-		rtkf_stabilize_covariance(rtkf);
-		lqr_stabilize_covariance(lqr);
+		lqr_calculate_covariance_2x2(lqr->A, lqr->B, lqr->K, lqr->P, lqr->Q, lqr->R);
+		rtkf_calculate_covariance_3x3(rtkf->A, rtkf->K, rtkf->P, rtkf->Q, rtkf->R);
+}
+
+void lqg_initialize_p_and_k(rtkf_state_t *rtkf, lqr_state_t *lqr)
+{
+		int rtkf_iterations = 0;
+		int lqr_iterations = 0;
+		for (int i = 0; i < SOLVER_MAX; i++) {
+			lqr_iterations++;
+			if (lqr_calculate_covariance_2x2(lqr->A, lqr->B, lqr->K, lqr->P, lqr->Q, lqr->R) && lqr_iterations > SOLVER_MIN) {
+				break;
+			}
+		}
+
+		for (int i = 0; i < SOLVER_MAX; i++) {
+			rtkf_iterations++;
+			if (rtkf_calculate_covariance_3x3(rtkf->A, rtkf->K, rtkf->P, rtkf->Q, rtkf->R) && rtkf_iterations > SOLVER_MIN) {
+				break;
+			}
+	 	}
 }
 
 /**
