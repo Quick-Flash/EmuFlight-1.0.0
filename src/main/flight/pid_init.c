@@ -187,6 +187,12 @@ void pidInitFilters(const pidProfile_t *pidProfile)
 #if defined(USE_THROTTLE_BOOST)
     pt1FilterInit(&throttleLpf, pt1FilterGain(pidProfile->throttle_boost_cutoff, pidRuntime.dT));
 #endif
+
+    for (int i = 0; i < MAX_SUPPORTED_MOTORS; i++)
+    {
+        pt1FilterInit(&pidRuntime.motorBoostFilter[i], pt1FilterGain(pidProfile->motorBoostCutoff, pidRuntime.dT));
+    }
+
 #if defined(USE_ITERM_RELAX)
     if (pidRuntime.itermRelax) {
         for (int i = 0; i < XYZ_AXIS_COUNT; i++) {
@@ -325,6 +331,10 @@ void pidInitConfig(const pidProfile_t *pidProfile)
 #if defined(USE_THROTTLE_BOOST)
     throttleBoost = pidProfile->throttle_boost * 0.1f;
 #endif
+
+    pidRuntime.motorBoost = (pidProfile->motorBoost + 100.0f) / 100.0f;
+    pidRuntime.motorBoostType = pidProfile->motorBoostType;
+
     pidRuntime.itermRotation = pidProfile->iterm_rotation;
     pidRuntime.antiGravityMode = pidProfile->antiGravityMode;
 

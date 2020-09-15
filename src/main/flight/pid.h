@@ -226,6 +226,10 @@ typedef struct pidProfile_s {
 
     uint8_t i_decay;
     uint8_t i_decay_cutoff;
+
+    uint8_t motorBoost;
+    uint8_t motorBoostCutoff;
+    uint8_t motorBoostType;
 } pidProfile_t;
 
 PG_DECLARE_ARRAY(pidProfile_t, PID_PROFILE_COUNT, pidProfiles);
@@ -391,6 +395,10 @@ typedef struct pidRuntime_s {
     float throttleCompensateAmount;
 #endif
 
+    pt1Filter_t motorBoostFilter[MAX_SUPPORTED_MOTORS];
+    float motorBoost;
+    uint8_t motorBoostType;
+
 #ifdef USE_AIRMODE_LPF
     float airmodeThrottleOffsetLimit;
 #endif
@@ -426,6 +434,9 @@ bool pidAntiGravityEnabled(void);
 float pidApplyThrustLinearization(float motorValue);
 float pidCompensateThrustLinearization(float throttle);
 #endif
+
+float applyMotorBreakingBoost(float motorOutput, int motorNumber);
+
 #ifdef USE_AIRMODE_LPF
 void pidUpdateAirmodeLpf(float currentOffset);
 float pidGetAirmodeThrottleOffset();

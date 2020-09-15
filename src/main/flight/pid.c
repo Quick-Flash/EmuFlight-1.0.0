@@ -229,6 +229,9 @@ void resetPidProfile(pidProfile_t *pidProfile)
         .dtermBoostLimit = 0,
         .i_decay = 4,
         .i_decay_cutoff = 200,
+        .motorBoost = 0,
+        .motorBoostCutoff = 10,
+        .motorBoostType = 0,
     );
 }
 
@@ -345,6 +348,32 @@ float pidApplyThrustLinearization(float motorOutput)
     return motorOutput;
 }
 #endif
+
+
+float applyMotorBreakingBoost(float motorOutput, int motorNumber)
+{
+  static FAST_DATA_ZERO_INIT float motorOutputPrevious[MAX_SUPPORTED_MOTORS];
+
+  float motorOutputBoosted, motorChange, motorBoost;
+
+  float motorChange = motorOutput - motorOutputPrevious[motorNumber];
+  float motorBoost = motorChange * pidRuntime.motorBoost - motorChange;
+
+  if (motorOutputPrevious[motorNumber] > motorOutput || pidRuntime.motorBoostType == 1)
+  {
+      motorChange = motorOutput - motorOutputPrevious[motorNumber];
+      motorBoost = motorChange * pidRuntime.motorBoost - motorChange;
+      motorBoost = pt1FilterApply(&pidRuntime.motorBoostFilter[motorNumber], motorBoost);
+      motorOutputBoosted = motorOutput + motorBoost;
+  } else {
+      motorBoost = pt1FilterApply(&pidRuntime.motorBoostFilter[motorNumber], 0);
+      motorOutputBoosted = motorOutput;
+  }
+
+  motorOutputPrevious[motorNumber] = motorOutput;
+
+  return motorOutputBoosted;
+}
 
 #if defined(USE_ACC)
 // calculates strength of horizon leveling; 0 = none, 1.0 = most leveling
@@ -761,7 +790,7 @@ static FAST_CODE_NOINLINE float applyLaunchControl(int axis, const rollAndPitchT
 }
 #endif
 
-float emuboost(float input, float boostMultiplier, float boostLimit)
+static FAST_CODE float emuboost(float input, float boostMultiplier, float boostLimit)
 {
     float boostedRate = (input * fabsf(input)) * boostMultiplier;
     if (fabsf(input * boostLimit) < fabsf(boostedRate))
