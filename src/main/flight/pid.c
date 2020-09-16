@@ -230,8 +230,8 @@ void resetPidProfile(pidProfile_t *pidProfile)
         .i_decay = 4,
         .i_decay_cutoff = 200,
         .motorBoostPositive = 0,
-        .motorBoostCutoff = 10,
         .motorBoostNegative = 0,
+        .motorBoostCutoff = 10,
     );
 }
 
