@@ -229,9 +229,9 @@ void resetPidProfile(pidProfile_t *pidProfile)
         .dtermBoostLimit = 0,
         .i_decay = 4,
         .i_decay_cutoff = 200,
-        .motorBoost = 0,
+        .motorBoostPositive = 0,
         .motorBoostCutoff = 10,
-        .motorBoostType = 0,
+        .motorBoostNegative = 0,
     );
 }
 
@@ -350,24 +350,23 @@ float pidApplyThrustLinearization(float motorOutput)
 #endif
 
 
-float applyMotorBreakingBoost(float motorOutput, int motorNumber)
+float applyMotorBoost(float motorOutput, int motorNumber)
 {
   static FAST_DATA_ZERO_INIT float motorOutputPrevious[MAX_SUPPORTED_MOTORS];
 
   float motorOutputBoosted, motorChange, motorBoost;
 
-  float motorChange = motorOutput - motorOutputPrevious[motorNumber];
-  float motorBoost = motorChange * pidRuntime.motorBoost - motorChange;
-
-  if (motorOutputPrevious[motorNumber] > motorOutput || pidRuntime.motorBoostType == 1)
+  if (motorOutputPrevious[motorNumber] < motorOutput || pidRuntime.motorBoostNegative == 1)
   {
       motorChange = motorOutput - motorOutputPrevious[motorNumber];
-      motorBoost = motorChange * pidRuntime.motorBoost - motorChange;
+      motorBoost = motorChange * pidRuntime.motorBoostPositive - motorChange;
       motorBoost = pt1FilterApply(&pidRuntime.motorBoostFilter[motorNumber], motorBoost);
       motorOutputBoosted = motorOutput + motorBoost;
   } else {
-      motorBoost = pt1FilterApply(&pidRuntime.motorBoostFilter[motorNumber], 0);
-      motorOutputBoosted = motorOutput;
+      motorChange = motorOutput - motorOutputPrevious[motorNumber];
+      motorBoost = motorChange * pidRuntime.motorBoostNegative - motorChange;
+      motorBoost = pt1FilterApply(&pidRuntime.motorBoostFilter[motorNumber], motorBoost);
+      motorOutputBoosted = motorOutput + motorBoost;
   }
 
   motorOutputPrevious[motorNumber] = motorOutput;
