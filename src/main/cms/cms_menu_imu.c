@@ -166,6 +166,9 @@ static uint8_t  cmsx_emuboost_limit_y;
 static uint16_t cmsx_dboost;
 static uint8_t  cmsx_dboost_limit;
 static uint8_t  cmsx_i_decay;
+static uint8_t  cmsx_motor_boost_positive;
+static uint8_t  cmsx_motor_boost_negative;
+static uint8_t  cmsx_motor_boost_cutoff;
 
 
 static const void *cmsx_PidAdvancedOnEnter(displayPort_t *pDisp)
@@ -182,6 +185,9 @@ static const void *cmsx_PidAdvancedOnEnter(displayPort_t *pDisp)
     cmsx_dboost =                   pidProfile->dtermBoost;
     cmsx_dboost_limit =             pidProfile->dtermBoostLimit;
     cmsx_i_decay =                  pidProfile->i_decay;
+    cmsx_motor_boost_positive =     pidProfile->motorBoostPositive;
+    cmsx_motor_boost_negative =     pidProfile->motorBoostNegative;
+    cmsx_motor_boost_cutoff =       pidProfile->motorBoostCutoff;
 
     return NULL;
 }
@@ -201,6 +207,9 @@ static const void *cmsx_PidAdvancedWriteback(displayPort_t *pDisp, const OSD_Ent
     pidProfile->dtermBoost =             cmsx_dboost;
     pidProfile->dtermBoostLimit =        cmsx_dboost_limit;
     pidProfile->i_decay =                cmsx_i_decay;
+    pidProfile->motorBoostPositive =     cmsx_motor_boost_positive;
+    pidProfile->motorBoostNegative =     cmsx_motor_boost_negative;
+    pidProfile->motorBoostCutoff =       cmsx_motor_boost_cutoff;
 
     return NULL;
 }
@@ -220,6 +229,10 @@ static const OSD_Entry cmsx_menuPidAdvancedEntries[] =
     { "DBOOST LIMIT",    OME_UINT8,  NULL, &(OSD_UINT8_t){ &cmsx_dboost_limit,      0, 250,  1 }, 0 },
 
     { "I DECAY",         OME_UINT8,  NULL, &(OSD_UINT8_t){ &cmsx_i_decay,           1, 10,   1 }, 0 },
+
+    { "MOTOR BOOST POS",         OME_UINT8,  NULL, &(OSD_UINT8_t){ &cmsx_motor_boost_positive,           0, 250,   1 }, 0 },
+    { "MOTOR BOOST NEG",         OME_UINT8,  NULL, &(OSD_UINT8_t){ &cmsx_motor_boost_negative,           0, 250,   1 }, 0 },
+    { "MOTOR BOOST CUT",         OME_UINT8,  NULL, &(OSD_UINT8_t){ &cmsx_motor_boost_cutoff,             1, 100,   1 }, 0 },
 
     { "BACK", OME_Back, NULL, NULL, 0 },
     { NULL, OME_END, NULL, NULL, 0 }
@@ -374,21 +387,21 @@ static const OSD_Entry cmsx_menuAngleEntries[] =
 {
     { "-- ANGLE PID --", OME_Label, NULL, pidProfileIndexString, 0},
 
-    { "ANGLE P LOW",  OME_UINT8,  NULL, &(OSD_UINT8_t){ &cmsx_P_angle_low,  0, 200, 1 }, 0 },
-    { "ANGLE D LOW",  OME_UINT8,  NULL, &(OSD_UINT8_t){ &cmsx_D_angle_low,  0, 200, 1 }, 0 },
-    { "ANGLE F",      OME_UINT16, NULL, &(OSD_UINT16_t){&cmsx_F_angle,     0, 2000, 1 }, 0 },
-    { "ANGLE P HIGH", OME_UINT8,  NULL, &(OSD_UINT8_t){ &cmsx_P_angle_high, 0, 200, 1 }, 0 },
-    { "ANGLE D HIGH", OME_UINT8,  NULL, &(OSD_UINT8_t){ &cmsx_D_angle_high, 0, 200, 1 }, 0 },
+    { "ANGLE P LOW",   OME_UINT8,  NULL, &(OSD_UINT8_t){ &cmsx_P_angle_low,  0, 200, 1 }, 0 },
+    { "ANGLE D LOW",   OME_UINT8,  NULL, &(OSD_UINT8_t){ &cmsx_D_angle_low,  0, 200, 1 }, 0 },
+    { "ANGLE F",       OME_UINT16, NULL, &(OSD_UINT16_t){&cmsx_F_angle,     0, 2000, 1 }, 0 },
+    { "ANGLE P HIGH",  OME_UINT8,  NULL, &(OSD_UINT8_t){ &cmsx_P_angle_high, 0, 200, 1 }, 0 },
+    { "ANGLE D HIGH",  OME_UINT8,  NULL, &(OSD_UINT8_t){ &cmsx_D_angle_high, 0, 200, 1 }, 0 },
 
-    { "ANGLE LIMIT",  OME_UINT8,  NULL, &(OSD_UINT8_t){ &cmsx_angle_limit, 10,  90, 1 }, 0 },
-    { "ANGLE EXPO",   OME_UINT8,  NULL, &(OSD_UINT8_t){ &cmsx_angle_expo,   0, 100, 1 }, 0 },
+    { "ANGLE LIMIT",   OME_UINT8,  NULL, &(OSD_UINT8_t){ &cmsx_angle_limit, 10,  90, 1 }, 0 },
+    { "ANGLE EXPO",    OME_UINT8,  NULL, &(OSD_UINT8_t){ &cmsx_angle_expo,   0, 100, 1 }, 0 },
 
-    { "HORZN GAIN",   OME_UINT8,  NULL, &(OSD_UINT8_t){ &cmsx_horizon_gain,         0, 200, 1 }, 0 },
-    { "HORZN TRANS",  OME_UINT8,  NULL, &(OSD_UINT8_t){ &cmsx_horizon_transition,   0, 200, 1 }, 0 },
-    { "RACEMODE TILT",OME_UINT8,  NULL, &(OSD_UINT8_t){ &cmsx_racemode_tilt_effect, 0, 180, 1 }, 0 },
+    { "HORZN GAIN",    OME_UINT8,  NULL, &(OSD_UINT8_t){ &cmsx_horizon_gain,         0, 200, 1 }, 0 },
+    { "HORZN TRANS",   OME_UINT8,  NULL, &(OSD_UINT8_t){ &cmsx_horizon_transition,   0, 200, 1 }, 0 },
+    { "RACEMODE TILT", OME_UINT8,  NULL, &(OSD_UINT8_t){ &cmsx_racemode_tilt_effect, 0, 180, 1 }, 0 },
 
-    { "NFE RACEMODE",    OME_TAB, NULL, &(OSD_TAB_t)  { &cmsx_racemode_horizon, 1, osdTableOnOFF }, 0 },
-    { "RACMODE HORZN",   OME_TAB, NULL, &(OSD_TAB_t)  { &cmsx_nfe_racemode,     1, osdTableOnOFF }, 0 },
+    { "NFE RACEMODE",  OME_TAB, NULL, &(OSD_TAB_t)  { &cmsx_racemode_horizon, 1, osdTableOnOFF }, 0 },
+    { "RACMODE HORZN", OME_TAB, NULL, &(OSD_TAB_t)  { &cmsx_nfe_racemode,     1, osdTableOnOFF }, 0 },
     { "BACK", OME_Back, NULL, NULL, 0 },
     { NULL, OME_END, NULL, NULL, 0 }
 };
