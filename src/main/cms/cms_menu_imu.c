@@ -230,8 +230,8 @@ static const OSD_Entry cmsx_menuPidAdvancedEntries[] =
 
     { "I DECAY",         OME_UINT8,  NULL, &(OSD_UINT8_t){ &cmsx_i_decay,           1, 10,   1 }, 0 },
 
-    { "MOTOR BOOST POS",         OME_UINT8,  NULL, &(OSD_UINT8_t){ &cmsx_motor_boost_positive,           0, 250,   1 }, 0 },
-    { "MOTOR BOOST NEG",         OME_UINT8,  NULL, &(OSD_UINT8_t){ &cmsx_motor_boost_negative,           0, 250,   1 }, 0 },
+    { "MOTOR BOOST POS",         OME_UINT8,  NULL, &(OSD_UINT8_t){ &cmsx_motor_boost_positive,           0, 200,   1 }, 0 },
+    { "MOTOR BOOST NEG",         OME_UINT8,  NULL, &(OSD_UINT8_t){ &cmsx_motor_boost_negative,           0, 200,   1 }, 0 },
     { "MOTOR BOOST CUT",         OME_UINT8,  NULL, &(OSD_UINT8_t){ &cmsx_motor_boost_cutoff,             1, 100,   1 }, 0 },
 
     { "BACK", OME_Back, NULL, NULL, 0 },

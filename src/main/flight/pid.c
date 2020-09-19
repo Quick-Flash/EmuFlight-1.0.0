@@ -229,8 +229,8 @@ void resetPidProfile(pidProfile_t *pidProfile)
         .dtermBoostLimit = 0,
         .i_decay = 4,
         .i_decay_cutoff = 200,
-        .motorBoostPositive = 0,
-        .motorBoostNegative = 0,
+        .motorBoostPositive = 100,
+        .motorBoostNegative = 100,
         .motorBoostCutoff = 10,
     );
 }
@@ -356,7 +356,7 @@ float applyMotorBoost(float motorOutput, int motorNumber)
 
   float motorOutputBoosted, motorChange, motorBoost;
 
-  if (motorOutputPrevious[motorNumber] < motorOutput || pidRuntime.motorBoostNegative == 1)
+  if (motorOutputPrevious[motorNumber] < motorOutput)
   {
       motorChange = motorOutput - motorOutputPrevious[motorNumber];
       motorBoost = motorChange * pidRuntime.motorBoostPositive - motorChange;
@@ -1198,10 +1198,7 @@ void FAST_CODE pidController(const pidProfile_t *pidProfile)
             DEBUG_SET(DEBUG_ANTI_GRAVITY, 3, lrintf(agDBoost * 1000));
         }
 
-        const float pidSum = pidData[axis].P + pidData[axis].I + pidData[axis].D + pidData[axis].F;
-        {
-            pidData[axis].Sum = pidSum;
-        }
+        pidData[axis].Sum = pidData[axis].P + pidData[axis].I + pidData[axis].D + pidData[axis].F;
     }
 
     if (pidProfile->dtermDynNotchQ > 0) {
