@@ -1170,10 +1170,7 @@ void FAST_CODE pidController(const pidProfile_t *pidProfile)
             DEBUG_SET(DEBUG_ANTI_GRAVITY, 3, lrintf(agDBoost * 1000));
         }
 
-        const float pidSum = pidData[axis].P + pidData[axis].I + pidData[axis].D + pidData[axis].F;
-        {
-            pidData[axis].Sum = pidSum;
-        }
+        pidData[axis].Sum = pidData[axis].P + pidData[axis].I + pidData[axis].D + pidData[axis].F;
     }
 
     if (pidProfile->dtermDynNotchQ > 0) {
