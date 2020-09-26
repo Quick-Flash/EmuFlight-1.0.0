@@ -331,8 +331,8 @@ void pidInitConfig(const pidProfile_t *pidProfile)
     throttleBoost = pidProfile->throttle_boost * 0.1f;
 #endif
 
-    pidRuntime.motorBoostPositive = pidProfile->motorBoostPositive * pidProfile->motorBoostPositive / 100.0f;
-    pidRuntime.motorBoostNegative = pidProfile->motorBoostNegative * pidProfile->motorBoostNegative / 100.0f;
+    pidRuntime.motorBoostPositive = pidProfile->motorBoostPositive * pidProfile->motorBoostPositive / 10000.0f;
+    pidRuntime.motorBoostNegative = pidProfile->motorBoostNegative * pidProfile->motorBoostNegative / 10000.0f;
 
     pidRuntime.itermRotation = pidProfile->iterm_rotation;
     pidRuntime.antiGravityMode = pidProfile->antiGravityMode;
