@@ -59,6 +59,7 @@ typedef struct systemConfig_s {
     uint8_t configurationState; // The state of the configuration (defaults / configured)
     uint8_t schedulerOptimizeRate;
     uint8_t enableStickArming; // boolean that determines whether stick arming can be used
+    uint8_t preset; // applies a preset that sets up rates (tpa), gyroConfig, and pidProfile
 } systemConfig_t;
 
 PG_DECLARE(systemConfig_t, systemConfig);
@@ -74,6 +75,7 @@ void writeUnmodifiedConfigToEEPROM(void);
 void ensureEEPROMStructureIsValid(void);
 
 void saveConfigAndNotify(void);
+void applyPreset(void);
 void validateAndFixGyroConfig(void);
 
 void setConfigDirty(void);

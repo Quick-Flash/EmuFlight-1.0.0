@@ -202,6 +202,7 @@ static const void *cmsx_PidAdvancedWriteback(displayPort_t *pDisp, const OSD_Ent
     pidProfile->dtermBoostLimit =        cmsx_dboost_limit;
     pidProfile->i_decay =                cmsx_i_decay;
 
+    pidInitConfig(currentPidProfile);
     return NULL;
 }
 
@@ -236,6 +237,8 @@ static CMS_Menu cmsx_menuPidAdvanced = {
     .entries = cmsx_menuPidAdvancedEntries
 };
 
+static uint8_t  cmsx_preset;
+
 static const void *cmsx_PidRead(void)
 {
 
@@ -246,6 +249,8 @@ static const void *cmsx_PidRead(void)
         tempPid[i][2] = pidProfile->pid[i].D;
         tempPidF[i] = pidProfile->pid[i].F;
     }
+    cmsx_preset = systemConfigMutable()->preset;
+
 
     return NULL;
 }
@@ -272,6 +277,7 @@ static const void *cmsx_PidWriteback(displayPort_t *pDisp, const OSD_Entry *self
         pidProfile->pid[i].D = tempPid[i][2];
         pidProfile->pid[i].F = tempPidF[i];
     }
+    systemConfigMutable()->preset = cmsx_preset;
     pidInitConfig(currentPidProfile);
 
     return NULL;
@@ -281,6 +287,8 @@ static const OSD_Entry cmsx_menuPidEntries[] =
 {
     { "-- PID --", OME_Label, NULL, pidProfileIndexString, 0},
     { "PID ADVANCED", OME_Submenu, cmsMenuChange, &cmsx_menuPidAdvanced, 0 },
+
+    { "PRESET", OME_UINT8, NULL, &(OSD_UINT8_t){ &cmsx_preset,  0, 1, 1 }, 0 },
 
     { "ROLL  P", OME_UINT8, NULL, &(OSD_UINT8_t){ &tempPid[PID_ROLL][0],  0, 200, 1 }, 0 },
     { "ROLL  I", OME_UINT8, NULL, &(OSD_UINT8_t){ &tempPid[PID_ROLL][1],  0, 200, 1 }, 0 },

@@ -34,8 +34,8 @@
 #define PID_CONTROLLER_BETAFLIGHT   1
 #define PID_MIXER_SCALING           1000.0f
 #define PID_SERVO_MIXER_SCALING     0.7f
-#define PIDSUM_LIMIT                500
-#define PIDSUM_LIMIT_YAW            400
+#define PIDSUM_LIMIT                1000
+#define PIDSUM_LIMIT_YAW            1000
 #define PIDSUM_LIMIT_MIN            100
 #define PIDSUM_LIMIT_MAX            1000
 
