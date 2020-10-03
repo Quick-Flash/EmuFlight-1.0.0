@@ -617,8 +617,112 @@ static void validateAndFixConfig(void)
 
 void applyPreset(void)
 {
-    if (systemConfig()->preset == 1)
+    if (systemConfig()->preset == QUICKFLASH_6S)
     {
+      //pidprofile
+      RESET_CONFIG_2(pidProfile_t, currentPidProfile,
+          .pid = {
+              [PID_ROLL] =       { 60, 85, 43, 95 },
+              [PID_PITCH] =      { 75, 85, 46, 115 },
+              [PID_YAW] =        { 70, 95, 0,  90 },
+              [PID_LEVEL_LOW] =  {100, 0,  10, 40 },
+              [PID_LEVEL_HIGH] = { 35, 0,  1,   0 },
+          },
+          .yaw_lowpass_hz = 0,
+          .itermWindupPointPercent = 100,
+          .levelAngleLimit = 55,
+          .feedForwardTransition = 0,
+          .itermThrottleThreshold = 250,
+          .itermAcceleratorGain = 3500,
+          .angleExpo = 30,
+          .horizonTransition = 0,
+          .horizonGain = 50,
+          .racemode_tilt_effect = 130,
+          .racemode_horizon = false,
+          .throttle_boost = 5,
+          .throttle_boost_cutoff = 15,
+          .iterm_rotation = true,
+          .iterm_relax = ITERM_RELAX_RP_INC,
+          .iterm_relax_cutoff = ITERM_RELAX_CUTOFF_DEFAULT,
+          .iterm_relax_type = ITERM_RELAX_SETPOINT,
+          .dterm_lowpass_hz = 0,      // NOTE: dynamic lpf is enabled by default so this setting is actually
+                                      // overridden and the static lowpass 1 is disabled.
+          .dterm_lowpass2_hz = 0,   // second Dterm LPF OFF by default
+          .dterm_filter_type = FILTER_PT1,
+          .dterm_filter2_type = FILTER_PT1,
+          .dyn_lpf_dterm_min_hz = 0,
+          .dyn_lpf_dterm_max_hz = 170,
+          .thrustLinearization = 25,
+          .d_min = { 0, 0, 0 },      // roll, pitch, yaw
+          .d_min_gain = 37,
+          .d_min_advance = 20,
+          .transient_throttle_limit = 15,
+          .profileName = { "QckFlsh" },
+          .ff_interpolate_sp = FF_INTERPOLATE_ON,
+          .ff_max_rate_limit = 100,
+          .ff_smooth_factor = 37,
+          .ff_boost = 15,
+          .dyn_lpf_curve_expo = 5,
+          .vbat_sag_compensation = 100,
+          .dtermDynNotchQ = 350,
+          .dterm_dyn_notch_min_hz = 100,
+          .dterm_dyn_notch_max_hz = 400,
+          .dterm_dyn_notch_location = 1,
+          .dterm_dynlpf2_fmin = 70,
+          .dterm_dynlpf2_fmax = 300,
+          .dterm_dynlpf2_gain = 15,
+          .dterm_dynlpf2_fc_fc = 10,
+          .dterm_dynlpf2_center_threshold = 10,
+          .dterm_dynlpf2_throttle_threshold = 25,
+          .dterm_dynlpf2_throttle_gain = 3,
+          .dterm_dynlpf2_enable = 1,
+          .dterm_dynlpf2_type = 1,
+          .dterm_dynlpf2_debug = 0,
+          .dtermMeasurementSlider = 100,
+          .nfe_racemode = false,
+          .emuBoostPR = 100,
+          .emuBoostY = 150,
+          .emuBoostLimitY = 75,
+          .emuBoostLimitPR = 50,
+          .dtermBoost = 200,
+          .dtermBoostLimit = 75,
+          .i_decay = 6,
+          .i_decay_cutoff = 200,
+      );
+      //gyro config
+      gyroConfigMutable()->gyro_lowpass_type = FILTER_PT1;
+      gyroConfigMutable()->gyro_lowpass_hz = 0;    // NOTE: dynamic lpf is enabled by default so this setting is actually
+                                          // overridden and the static lowpass 1 is disabled.
+      gyroConfigMutable()->gyro_lowpass2_type = FILTER_PT1;
+      gyroConfigMutable()->gyro_lowpass2_hz = 0;
+      gyroConfigMutable()->dyn_lpf_gyro_min_hz = 0;
+      gyroConfigMutable()->dyn_lpf_gyro_max_hz = 500;
+      gyroConfigMutable()->dyn_notch_max_hz = 500;
+      gyroConfigMutable()->dyn_notch_q = 700;
+      gyroConfigMutable()->dyn_notch_min_hz = 150;
+      gyroConfigMutable()->imuf_roll_q = 4500;
+      gyroConfigMutable()->imuf_pitch_q = 4500;
+      gyroConfigMutable()->imuf_yaw_q = 4500;
+      gyroConfigMutable()->imuf_w = 24;
+      gyroConfigMutable()->imuf_sharpness = 3500;
+  #ifdef USE_DYN_LPF2
+      gyroConfigMutable()->dynlpf2_fmin = 50;
+      gyroConfigMutable()->dynlpf2_fmax = 600;
+      gyroConfigMutable()->dynlpf2_gain = 70;
+      gyroConfigMutable()->dynlpf2_fc_fc = 10;
+      gyroConfigMutable()->dynlpf2_center_threshold = 10;
+      gyroConfigMutable()->dynlpf2_throttle_threshold = 30;
+      gyroConfigMutable()->dynlpf2_throttle_gain = 10;
+      gyroConfigMutable()->dynlpf2_enable = 1;
+      gyroConfigMutable()->dynlpf2_type = 0;
+  #endif
+      gyroConfigMutable()->dyn_lpf_curve_expo = 2;
+      //tpa
+      controlRateProfilesMutable(systemConfig()->activeRateProfile)->dynThrP = 88;
+      controlRateProfilesMutable(systemConfig()->activeRateProfile)->dynThrI = 135;
+      controlRateProfilesMutable(systemConfig()->activeRateProfile)->dynThrD = 67;
+    } else if (systemConfig()-> preset == ANDREY_6S) {
+      //pidprofile
       RESET_CONFIG_2(pidProfile_t, currentPidProfile,
           .pid = {
               [PID_ROLL] =       { 60, 85, 40, 90 },
@@ -631,7 +735,6 @@ void applyPreset(void)
           .itermWindupPointPercent = 100,
           .levelAngleLimit = 55,
           .feedForwardTransition = 0,
-          .rateAccelLimit = 0,
           .itermThrottleThreshold = 250,
           .itermAcceleratorGain = 3500,
           .angleExpo = 30,
@@ -656,8 +759,6 @@ void applyPreset(void)
           .d_min = { 0, 0, 0 },      // roll, pitch, yaw
           .d_min_gain = 37,
           .d_min_advance = 20,
-          .motor_output_limit = 100,
-          .auto_profile_cell_count = AUTO_PROFILE_CELL_COUNT_STAY,
           .transient_throttle_limit = 15,
           .profileName = { "QckFlsh" },
           .ff_interpolate_sp = FF_INTERPOLATE_ON,
@@ -691,6 +792,7 @@ void applyPreset(void)
           .i_decay = 4,
           .i_decay_cutoff = 200,
       );
+      //gyro config
       gyroConfigMutable()->gyro_lowpass_type = FILTER_PT1;
       gyroConfigMutable()->gyro_lowpass_hz = 0;    // NOTE: dynamic lpf is enabled by default so this setting is actually
                                           // overridden and the static lowpass 1 is disabled.
@@ -718,15 +820,530 @@ void applyPreset(void)
       gyroConfigMutable()->dynlpf2_type = 0;
   #endif
       gyroConfigMutable()->dyn_lpf_curve_expo = 2;
+      //tpa
       controlRateProfilesMutable(systemConfig()->activeRateProfile)->dynThrP = 92;
       controlRateProfilesMutable(systemConfig()->activeRateProfile)->dynThrI = 135;
       controlRateProfilesMutable(systemConfig()->activeRateProfile)->dynThrD = 85;
-    } else if (systemConfig()-> preset == 2) {
-
+    } else if (systemConfig()-> preset == BLACKBIRD_6S) {
+      //pidprofile
+      RESET_CONFIG_2(pidProfile_t, currentPidProfile,
+          .pid = {
+              [PID_ROLL] =       { 60, 85, 40, 90 },
+              [PID_PITCH] =      { 65, 90, 42, 95 },
+              [PID_YAW] =        { 70, 95, 0,  90 },
+              [PID_LEVEL_LOW] =  {100, 0,  10, 40 },
+              [PID_LEVEL_HIGH] = { 35, 0,  1,   0 },
+          },
+          .yaw_lowpass_hz = 0,
+          .itermWindupPointPercent = 100,
+          .levelAngleLimit = 55,
+          .feedForwardTransition = 0,
+          .itermThrottleThreshold = 250,
+          .itermAcceleratorGain = 3500,
+          .angleExpo = 30,
+          .horizonTransition = 0,
+          .horizonGain = 50,
+          .racemode_tilt_effect = 130,
+          .racemode_horizon = false,
+          .throttle_boost = 5,
+          .throttle_boost_cutoff = 15,
+          .iterm_rotation = true,
+          .iterm_relax = ITERM_RELAX_RP_INC,
+          .iterm_relax_cutoff = ITERM_RELAX_CUTOFF_DEFAULT,
+          .iterm_relax_type = ITERM_RELAX_SETPOINT,
+          .dterm_lowpass_hz = 0,      // NOTE: dynamic lpf is enabled by default so this setting is actually
+                                      // overridden and the static lowpass 1 is disabled.
+          .dterm_lowpass2_hz = 0,   // second Dterm LPF OFF by default
+          .dterm_filter_type = FILTER_PT1,
+          .dterm_filter2_type = FILTER_PT1,
+          .dyn_lpf_dterm_min_hz = 0,
+          .dyn_lpf_dterm_max_hz = 170,
+          .thrustLinearization = 15,
+          .d_min = { 0, 0, 0 },      // roll, pitch, yaw
+          .d_min_gain = 37,
+          .d_min_advance = 20,
+          .transient_throttle_limit = 15,
+          .profileName = { "QckFlsh" },
+          .ff_interpolate_sp = FF_INTERPOLATE_ON,
+          .ff_max_rate_limit = 100,
+          .ff_smooth_factor = 37,
+          .ff_boost = 15,
+          .dyn_lpf_curve_expo = 5,
+          .vbat_sag_compensation = 100,
+          .dtermDynNotchQ = 250,
+          .dterm_dyn_notch_min_hz = 150,
+          .dterm_dyn_notch_max_hz = 600,
+          .dterm_dyn_notch_location = 0,
+          .dterm_dynlpf2_fmin = 70,
+          .dterm_dynlpf2_fmax = 300,
+          .dterm_dynlpf2_gain = 20,
+          .dterm_dynlpf2_fc_fc = 10,
+          .dterm_dynlpf2_center_threshold = 10,
+          .dterm_dynlpf2_throttle_threshold = 25,
+          .dterm_dynlpf2_throttle_gain = 3,
+          .dterm_dynlpf2_enable = 1,
+          .dterm_dynlpf2_type = 1,
+          .dterm_dynlpf2_debug = 0,
+          .dtermMeasurementSlider = 75,
+          .nfe_racemode = false,
+          .emuBoostPR = 100,
+          .emuBoostY = 200,
+          .emuBoostLimitY = 125,
+          .emuBoostLimitPR = 75,
+          .dtermBoost = 75,
+          .dtermBoostLimit = 50,
+          .i_decay = 4,
+          .i_decay_cutoff = 200,
+      );
+      //gyro config
+      gyroConfigMutable()->gyro_lowpass_type = FILTER_PT1;
+      gyroConfigMutable()->gyro_lowpass_hz = 0;    // NOTE: dynamic lpf is enabled by default so this setting is actually
+                                          // overridden and the static lowpass 1 is disabled.
+      gyroConfigMutable()->gyro_lowpass2_type = FILTER_PT1;
+      gyroConfigMutable()->gyro_lowpass2_hz = 0;
+      gyroConfigMutable()->dyn_lpf_gyro_min_hz = 0;
+      gyroConfigMutable()->dyn_lpf_gyro_max_hz = 500;
+      gyroConfigMutable()->dyn_notch_max_hz = 600;
+      gyroConfigMutable()->dyn_notch_q = 350;
+      gyroConfigMutable()->dyn_notch_min_hz = 150;
+      gyroConfigMutable()->imuf_roll_q = 4000;
+      gyroConfigMutable()->imuf_pitch_q = 4000;
+      gyroConfigMutable()->imuf_yaw_q = 4000;
+      gyroConfigMutable()->imuf_w = 32;
+      gyroConfigMutable()->imuf_sharpness = 2500;
+  #ifdef USE_DYN_LPF2
+      gyroConfigMutable()->dynlpf2_fmin = 50;
+      gyroConfigMutable()->dynlpf2_fmax = 600;
+      gyroConfigMutable()->dynlpf2_gain = 70;
+      gyroConfigMutable()->dynlpf2_fc_fc = 10;
+      gyroConfigMutable()->dynlpf2_center_threshold = 10;
+      gyroConfigMutable()->dynlpf2_throttle_threshold = 30;
+      gyroConfigMutable()->dynlpf2_throttle_gain = 10;
+      gyroConfigMutable()->dynlpf2_enable = 1;
+      gyroConfigMutable()->dynlpf2_type = 0;
+  #endif
+      gyroConfigMutable()->dyn_lpf_curve_expo = 2;
+      //tpa
+      controlRateProfilesMutable(systemConfig()->activeRateProfile)->dynThrP = 92;
+      controlRateProfilesMutable(systemConfig()->activeRateProfile)->dynThrI = 135;
+      controlRateProfilesMutable(systemConfig()->activeRateProfile)->dynThrD = 85;
+    } else if (systemConfig()-> preset == FILLTHRILLZ_6S) {
+      //pidprofile
+      RESET_CONFIG_2(pidProfile_t, currentPidProfile,
+          .pid = {
+              [PID_ROLL] =       { 60, 85, 40, 90 },
+              [PID_PITCH] =      { 65, 90, 42, 95 },
+              [PID_YAW] =        { 70, 95, 0,  90 },
+              [PID_LEVEL_LOW] =  {100, 0,  10, 40 },
+              [PID_LEVEL_HIGH] = { 35, 0,  1,   0 },
+          },
+          .yaw_lowpass_hz = 0,
+          .itermWindupPointPercent = 100,
+          .levelAngleLimit = 55,
+          .feedForwardTransition = 0,
+          .itermThrottleThreshold = 250,
+          .itermAcceleratorGain = 3500,
+          .angleExpo = 30,
+          .horizonTransition = 0,
+          .horizonGain = 50,
+          .racemode_tilt_effect = 130,
+          .racemode_horizon = false,
+          .throttle_boost = 5,
+          .throttle_boost_cutoff = 15,
+          .iterm_rotation = true,
+          .iterm_relax = ITERM_RELAX_RP_INC,
+          .iterm_relax_cutoff = ITERM_RELAX_CUTOFF_DEFAULT,
+          .iterm_relax_type = ITERM_RELAX_SETPOINT,
+          .dterm_lowpass_hz = 0,      // NOTE: dynamic lpf is enabled by default so this setting is actually
+                                      // overridden and the static lowpass 1 is disabled.
+          .dterm_lowpass2_hz = 0,   // second Dterm LPF OFF by default
+          .dterm_filter_type = FILTER_PT1,
+          .dterm_filter2_type = FILTER_PT1,
+          .dyn_lpf_dterm_min_hz = 0,
+          .dyn_lpf_dterm_max_hz = 170,
+          .thrustLinearization = 15,
+          .d_min = { 0, 0, 0 },      // roll, pitch, yaw
+          .d_min_gain = 37,
+          .d_min_advance = 20,
+          .transient_throttle_limit = 15,
+          .profileName = { "QckFlsh" },
+          .ff_interpolate_sp = FF_INTERPOLATE_ON,
+          .ff_max_rate_limit = 100,
+          .ff_smooth_factor = 37,
+          .ff_boost = 15,
+          .dyn_lpf_curve_expo = 5,
+          .vbat_sag_compensation = 100,
+          .dtermDynNotchQ = 250,
+          .dterm_dyn_notch_min_hz = 150,
+          .dterm_dyn_notch_max_hz = 600,
+          .dterm_dyn_notch_location = 0,
+          .dterm_dynlpf2_fmin = 70,
+          .dterm_dynlpf2_fmax = 300,
+          .dterm_dynlpf2_gain = 20,
+          .dterm_dynlpf2_fc_fc = 10,
+          .dterm_dynlpf2_center_threshold = 10,
+          .dterm_dynlpf2_throttle_threshold = 25,
+          .dterm_dynlpf2_throttle_gain = 3,
+          .dterm_dynlpf2_enable = 1,
+          .dterm_dynlpf2_type = 1,
+          .dterm_dynlpf2_debug = 0,
+          .dtermMeasurementSlider = 75,
+          .nfe_racemode = false,
+          .emuBoostPR = 100,
+          .emuBoostY = 200,
+          .emuBoostLimitY = 125,
+          .emuBoostLimitPR = 75,
+          .dtermBoost = 75,
+          .dtermBoostLimit = 50,
+          .i_decay = 4,
+          .i_decay_cutoff = 200,
+      );
+      //gyro config
+      gyroConfigMutable()->gyro_lowpass_type = FILTER_PT1;
+      gyroConfigMutable()->gyro_lowpass_hz = 0;    // NOTE: dynamic lpf is enabled by default so this setting is actually
+                                          // overridden and the static lowpass 1 is disabled.
+      gyroConfigMutable()->gyro_lowpass2_type = FILTER_PT1;
+      gyroConfigMutable()->gyro_lowpass2_hz = 0;
+      gyroConfigMutable()->dyn_lpf_gyro_min_hz = 0;
+      gyroConfigMutable()->dyn_lpf_gyro_max_hz = 500;
+      gyroConfigMutable()->dyn_notch_max_hz = 600;
+      gyroConfigMutable()->dyn_notch_q = 350;
+      gyroConfigMutable()->dyn_notch_min_hz = 150;
+      gyroConfigMutable()->imuf_roll_q = 4000;
+      gyroConfigMutable()->imuf_pitch_q = 4000;
+      gyroConfigMutable()->imuf_yaw_q = 4000;
+      gyroConfigMutable()->imuf_w = 32;
+      gyroConfigMutable()->imuf_sharpness = 2500;
+  #ifdef USE_DYN_LPF2
+      gyroConfigMutable()->dynlpf2_fmin = 50;
+      gyroConfigMutable()->dynlpf2_fmax = 600;
+      gyroConfigMutable()->dynlpf2_gain = 70;
+      gyroConfigMutable()->dynlpf2_fc_fc = 10;
+      gyroConfigMutable()->dynlpf2_center_threshold = 10;
+      gyroConfigMutable()->dynlpf2_throttle_threshold = 30;
+      gyroConfigMutable()->dynlpf2_throttle_gain = 10;
+      gyroConfigMutable()->dynlpf2_enable = 1;
+      gyroConfigMutable()->dynlpf2_type = 0;
+  #endif
+      gyroConfigMutable()->dyn_lpf_curve_expo = 2;
+      //tpa
+      controlRateProfilesMutable(systemConfig()->activeRateProfile)->dynThrP = 92;
+      controlRateProfilesMutable(systemConfig()->activeRateProfile)->dynThrI = 135;
+      controlRateProfilesMutable(systemConfig()->activeRateProfile)->dynThrD = 85;
+    } else if (systemConfig()-> preset == PIERRE_4S) {
+      //pidprofile
+      RESET_CONFIG_2(pidProfile_t, currentPidProfile,
+          .pid = {
+              [PID_ROLL] =       { 60, 85, 40, 90 },
+              [PID_PITCH] =      { 65, 90, 42, 95 },
+              [PID_YAW] =        { 70, 95, 0,  90 },
+              [PID_LEVEL_LOW] =  {100, 0,  10, 40 },
+              [PID_LEVEL_HIGH] = { 35, 0,  1,   0 },
+          },
+          .yaw_lowpass_hz = 0,
+          .itermWindupPointPercent = 100,
+          .levelAngleLimit = 55,
+          .feedForwardTransition = 0,
+          .itermThrottleThreshold = 250,
+          .itermAcceleratorGain = 3500,
+          .angleExpo = 30,
+          .horizonTransition = 0,
+          .horizonGain = 50,
+          .racemode_tilt_effect = 130,
+          .racemode_horizon = false,
+          .throttle_boost = 5,
+          .throttle_boost_cutoff = 15,
+          .iterm_rotation = true,
+          .iterm_relax = ITERM_RELAX_RP_INC,
+          .iterm_relax_cutoff = ITERM_RELAX_CUTOFF_DEFAULT,
+          .iterm_relax_type = ITERM_RELAX_SETPOINT,
+          .dterm_lowpass_hz = 0,      // NOTE: dynamic lpf is enabled by default so this setting is actually
+                                      // overridden and the static lowpass 1 is disabled.
+          .dterm_lowpass2_hz = 0,   // second Dterm LPF OFF by default
+          .dterm_filter_type = FILTER_PT1,
+          .dterm_filter2_type = FILTER_PT1,
+          .dyn_lpf_dterm_min_hz = 0,
+          .dyn_lpf_dterm_max_hz = 170,
+          .thrustLinearization = 15,
+          .d_min = { 0, 0, 0 },      // roll, pitch, yaw
+          .d_min_gain = 37,
+          .d_min_advance = 20,
+          .transient_throttle_limit = 15,
+          .profileName = { "QckFlsh" },
+          .ff_interpolate_sp = FF_INTERPOLATE_ON,
+          .ff_max_rate_limit = 100,
+          .ff_smooth_factor = 37,
+          .ff_boost = 15,
+          .dyn_lpf_curve_expo = 5,
+          .vbat_sag_compensation = 100,
+          .dtermDynNotchQ = 250,
+          .dterm_dyn_notch_min_hz = 150,
+          .dterm_dyn_notch_max_hz = 600,
+          .dterm_dyn_notch_location = 0,
+          .dterm_dynlpf2_fmin = 70,
+          .dterm_dynlpf2_fmax = 300,
+          .dterm_dynlpf2_gain = 20,
+          .dterm_dynlpf2_fc_fc = 10,
+          .dterm_dynlpf2_center_threshold = 10,
+          .dterm_dynlpf2_throttle_threshold = 25,
+          .dterm_dynlpf2_throttle_gain = 3,
+          .dterm_dynlpf2_enable = 1,
+          .dterm_dynlpf2_type = 1,
+          .dterm_dynlpf2_debug = 0,
+          .dtermMeasurementSlider = 75,
+          .nfe_racemode = false,
+          .emuBoostPR = 100,
+          .emuBoostY = 200,
+          .emuBoostLimitY = 125,
+          .emuBoostLimitPR = 75,
+          .dtermBoost = 75,
+          .dtermBoostLimit = 50,
+          .i_decay = 4,
+          .i_decay_cutoff = 200,
+      );
+      //gyro config
+      gyroConfigMutable()->gyro_lowpass_type = FILTER_PT1;
+      gyroConfigMutable()->gyro_lowpass_hz = 0;    // NOTE: dynamic lpf is enabled by default so this setting is actually
+                                          // overridden and the static lowpass 1 is disabled.
+      gyroConfigMutable()->gyro_lowpass2_type = FILTER_PT1;
+      gyroConfigMutable()->gyro_lowpass2_hz = 0;
+      gyroConfigMutable()->dyn_lpf_gyro_min_hz = 0;
+      gyroConfigMutable()->dyn_lpf_gyro_max_hz = 500;
+      gyroConfigMutable()->dyn_notch_max_hz = 600;
+      gyroConfigMutable()->dyn_notch_q = 350;
+      gyroConfigMutable()->dyn_notch_min_hz = 150;
+      gyroConfigMutable()->imuf_roll_q = 4000;
+      gyroConfigMutable()->imuf_pitch_q = 4000;
+      gyroConfigMutable()->imuf_yaw_q = 4000;
+      gyroConfigMutable()->imuf_w = 32;
+      gyroConfigMutable()->imuf_sharpness = 2500;
+  #ifdef USE_DYN_LPF2
+      gyroConfigMutable()->dynlpf2_fmin = 50;
+      gyroConfigMutable()->dynlpf2_fmax = 600;
+      gyroConfigMutable()->dynlpf2_gain = 70;
+      gyroConfigMutable()->dynlpf2_fc_fc = 10;
+      gyroConfigMutable()->dynlpf2_center_threshold = 10;
+      gyroConfigMutable()->dynlpf2_throttle_threshold = 30;
+      gyroConfigMutable()->dynlpf2_throttle_gain = 10;
+      gyroConfigMutable()->dynlpf2_enable = 1;
+      gyroConfigMutable()->dynlpf2_type = 0;
+  #endif
+      gyroConfigMutable()->dyn_lpf_curve_expo = 2;
+      //tpa
+      controlRateProfilesMutable(systemConfig()->activeRateProfile)->dynThrP = 92;
+      controlRateProfilesMutable(systemConfig()->activeRateProfile)->dynThrI = 135;
+      controlRateProfilesMutable(systemConfig()->activeRateProfile)->dynThrD = 85;
+    } else if (systemConfig()-> preset == SKYLION_4S) {
+      //pidprofile
+      RESET_CONFIG_2(pidProfile_t, currentPidProfile,
+          .pid = {
+              [PID_ROLL] =       { 60, 85, 40, 90 },
+              [PID_PITCH] =      { 65, 90, 42, 95 },
+              [PID_YAW] =        { 70, 95, 0,  90 },
+              [PID_LEVEL_LOW] =  {100, 0,  10, 40 },
+              [PID_LEVEL_HIGH] = { 35, 0,  1,   0 },
+          },
+          .yaw_lowpass_hz = 0,
+          .itermWindupPointPercent = 100,
+          .levelAngleLimit = 55,
+          .feedForwardTransition = 0,
+          .itermThrottleThreshold = 250,
+          .itermAcceleratorGain = 3500,
+          .angleExpo = 30,
+          .horizonTransition = 0,
+          .horizonGain = 50,
+          .racemode_tilt_effect = 130,
+          .racemode_horizon = false,
+          .throttle_boost = 5,
+          .throttle_boost_cutoff = 15,
+          .iterm_rotation = true,
+          .iterm_relax = ITERM_RELAX_RP_INC,
+          .iterm_relax_cutoff = ITERM_RELAX_CUTOFF_DEFAULT,
+          .iterm_relax_type = ITERM_RELAX_SETPOINT,
+          .dterm_lowpass_hz = 0,      // NOTE: dynamic lpf is enabled by default so this setting is actually
+                                      // overridden and the static lowpass 1 is disabled.
+          .dterm_lowpass2_hz = 0,   // second Dterm LPF OFF by default
+          .dterm_filter_type = FILTER_PT1,
+          .dterm_filter2_type = FILTER_PT1,
+          .dyn_lpf_dterm_min_hz = 0,
+          .dyn_lpf_dterm_max_hz = 170,
+          .thrustLinearization = 15,
+          .d_min = { 0, 0, 0 },      // roll, pitch, yaw
+          .d_min_gain = 37,
+          .d_min_advance = 20,
+          .transient_throttle_limit = 15,
+          .profileName = { "QckFlsh" },
+          .ff_interpolate_sp = FF_INTERPOLATE_ON,
+          .ff_max_rate_limit = 100,
+          .ff_smooth_factor = 37,
+          .ff_boost = 15,
+          .dyn_lpf_curve_expo = 5,
+          .vbat_sag_compensation = 100,
+          .dtermDynNotchQ = 250,
+          .dterm_dyn_notch_min_hz = 150,
+          .dterm_dyn_notch_max_hz = 600,
+          .dterm_dyn_notch_location = 0,
+          .dterm_dynlpf2_fmin = 70,
+          .dterm_dynlpf2_fmax = 300,
+          .dterm_dynlpf2_gain = 20,
+          .dterm_dynlpf2_fc_fc = 10,
+          .dterm_dynlpf2_center_threshold = 10,
+          .dterm_dynlpf2_throttle_threshold = 25,
+          .dterm_dynlpf2_throttle_gain = 3,
+          .dterm_dynlpf2_enable = 1,
+          .dterm_dynlpf2_type = 1,
+          .dterm_dynlpf2_debug = 0,
+          .dtermMeasurementSlider = 75,
+          .nfe_racemode = false,
+          .emuBoostPR = 100,
+          .emuBoostY = 200,
+          .emuBoostLimitY = 125,
+          .emuBoostLimitPR = 75,
+          .dtermBoost = 75,
+          .dtermBoostLimit = 50,
+          .i_decay = 4,
+          .i_decay_cutoff = 200,
+      );
+      //gyro config
+      gyroConfigMutable()->gyro_lowpass_type = FILTER_PT1;
+      gyroConfigMutable()->gyro_lowpass_hz = 0;    // NOTE: dynamic lpf is enabled by default so this setting is actually
+                                          // overridden and the static lowpass 1 is disabled.
+      gyroConfigMutable()->gyro_lowpass2_type = FILTER_PT1;
+      gyroConfigMutable()->gyro_lowpass2_hz = 0;
+      gyroConfigMutable()->dyn_lpf_gyro_min_hz = 0;
+      gyroConfigMutable()->dyn_lpf_gyro_max_hz = 500;
+      gyroConfigMutable()->dyn_notch_max_hz = 600;
+      gyroConfigMutable()->dyn_notch_q = 350;
+      gyroConfigMutable()->dyn_notch_min_hz = 150;
+      gyroConfigMutable()->imuf_roll_q = 4000;
+      gyroConfigMutable()->imuf_pitch_q = 4000;
+      gyroConfigMutable()->imuf_yaw_q = 4000;
+      gyroConfigMutable()->imuf_w = 32;
+      gyroConfigMutable()->imuf_sharpness = 2500;
+  #ifdef USE_DYN_LPF2
+      gyroConfigMutable()->dynlpf2_fmin = 50;
+      gyroConfigMutable()->dynlpf2_fmax = 600;
+      gyroConfigMutable()->dynlpf2_gain = 70;
+      gyroConfigMutable()->dynlpf2_fc_fc = 10;
+      gyroConfigMutable()->dynlpf2_center_threshold = 10;
+      gyroConfigMutable()->dynlpf2_throttle_threshold = 30;
+      gyroConfigMutable()->dynlpf2_throttle_gain = 10;
+      gyroConfigMutable()->dynlpf2_enable = 1;
+      gyroConfigMutable()->dynlpf2_type = 0;
+  #endif
+      gyroConfigMutable()->dyn_lpf_curve_expo = 2;
+      //tpa
+      controlRateProfilesMutable(systemConfig()->activeRateProfile)->dynThrP = 92;
+      controlRateProfilesMutable(systemConfig()->activeRateProfile)->dynThrI = 135;
+      controlRateProfilesMutable(systemConfig()->activeRateProfile)->dynThrD = 85;
+    } else if (systemConfig()-> preset == PROJECT_MOCKINGBIRD) {
+      //pidprofile
+      RESET_CONFIG_2(pidProfile_t, currentPidProfile,
+          .pid = {
+              [PID_ROLL] =       { 60, 85, 40, 90 },
+              [PID_PITCH] =      { 65, 90, 42, 95 },
+              [PID_YAW] =        { 70, 95, 0,  90 },
+              [PID_LEVEL_LOW] =  {100, 0,  10, 40 },
+              [PID_LEVEL_HIGH] = { 35, 0,  1,   0 },
+          },
+          .yaw_lowpass_hz = 0,
+          .itermWindupPointPercent = 100,
+          .levelAngleLimit = 55,
+          .feedForwardTransition = 0,
+          .itermThrottleThreshold = 250,
+          .itermAcceleratorGain = 3500,
+          .angleExpo = 30,
+          .horizonTransition = 0,
+          .horizonGain = 50,
+          .racemode_tilt_effect = 130,
+          .racemode_horizon = false,
+          .throttle_boost = 5,
+          .throttle_boost_cutoff = 15,
+          .iterm_rotation = true,
+          .iterm_relax = ITERM_RELAX_RP_INC,
+          .iterm_relax_cutoff = ITERM_RELAX_CUTOFF_DEFAULT,
+          .iterm_relax_type = ITERM_RELAX_SETPOINT,
+          .dterm_lowpass_hz = 0,      // NOTE: dynamic lpf is enabled by default so this setting is actually
+                                      // overridden and the static lowpass 1 is disabled.
+          .dterm_lowpass2_hz = 0,   // second Dterm LPF OFF by default
+          .dterm_filter_type = FILTER_PT1,
+          .dterm_filter2_type = FILTER_PT1,
+          .dyn_lpf_dterm_min_hz = 0,
+          .dyn_lpf_dterm_max_hz = 170,
+          .thrustLinearization = 15,
+          .d_min = { 0, 0, 0 },      // roll, pitch, yaw
+          .d_min_gain = 37,
+          .d_min_advance = 20,
+          .transient_throttle_limit = 15,
+          .profileName = { "QckFlsh" },
+          .ff_interpolate_sp = FF_INTERPOLATE_ON,
+          .ff_max_rate_limit = 100,
+          .ff_smooth_factor = 37,
+          .ff_boost = 15,
+          .dyn_lpf_curve_expo = 5,
+          .vbat_sag_compensation = 100,
+          .dtermDynNotchQ = 250,
+          .dterm_dyn_notch_min_hz = 150,
+          .dterm_dyn_notch_max_hz = 600,
+          .dterm_dyn_notch_location = 0,
+          .dterm_dynlpf2_fmin = 70,
+          .dterm_dynlpf2_fmax = 300,
+          .dterm_dynlpf2_gain = 20,
+          .dterm_dynlpf2_fc_fc = 10,
+          .dterm_dynlpf2_center_threshold = 10,
+          .dterm_dynlpf2_throttle_threshold = 25,
+          .dterm_dynlpf2_throttle_gain = 3,
+          .dterm_dynlpf2_enable = 1,
+          .dterm_dynlpf2_type = 1,
+          .dterm_dynlpf2_debug = 0,
+          .dtermMeasurementSlider = 75,
+          .nfe_racemode = false,
+          .emuBoostPR = 100,
+          .emuBoostY = 200,
+          .emuBoostLimitY = 125,
+          .emuBoostLimitPR = 75,
+          .dtermBoost = 75,
+          .dtermBoostLimit = 50,
+          .i_decay = 4,
+          .i_decay_cutoff = 200,
+      );
+      //gyro config
+      gyroConfigMutable()->gyro_lowpass_type = FILTER_PT1;
+      gyroConfigMutable()->gyro_lowpass_hz = 0;    // NOTE: dynamic lpf is enabled by default so this setting is actually
+                                          // overridden and the static lowpass 1 is disabled.
+      gyroConfigMutable()->gyro_lowpass2_type = FILTER_PT1;
+      gyroConfigMutable()->gyro_lowpass2_hz = 0;
+      gyroConfigMutable()->dyn_lpf_gyro_min_hz = 0;
+      gyroConfigMutable()->dyn_lpf_gyro_max_hz = 500;
+      gyroConfigMutable()->dyn_notch_max_hz = 600;
+      gyroConfigMutable()->dyn_notch_q = 350;
+      gyroConfigMutable()->dyn_notch_min_hz = 150;
+      gyroConfigMutable()->imuf_roll_q = 4000;
+      gyroConfigMutable()->imuf_pitch_q = 4000;
+      gyroConfigMutable()->imuf_yaw_q = 4000;
+      gyroConfigMutable()->imuf_w = 32;
+      gyroConfigMutable()->imuf_sharpness = 2500;
+  #ifdef USE_DYN_LPF2
+      gyroConfigMutable()->dynlpf2_fmin = 50;
+      gyroConfigMutable()->dynlpf2_fmax = 600;
+      gyroConfigMutable()->dynlpf2_gain = 70;
+      gyroConfigMutable()->dynlpf2_fc_fc = 10;
+      gyroConfigMutable()->dynlpf2_center_threshold = 10;
+      gyroConfigMutable()->dynlpf2_throttle_threshold = 30;
+      gyroConfigMutable()->dynlpf2_throttle_gain = 10;
+      gyroConfigMutable()->dynlpf2_enable = 1;
+      gyroConfigMutable()->dynlpf2_type = 0;
+  #endif
+      gyroConfigMutable()->dyn_lpf_curve_expo = 2;
+      //tpa
+      controlRateProfilesMutable(systemConfig()->activeRateProfile)->dynThrP = 92;
+      controlRateProfilesMutable(systemConfig()->activeRateProfile)->dynThrI = 135;
+      controlRateProfilesMutable(systemConfig()->activeRateProfile)->dynThrD = 85;
     }
-    if (systemConfig()->preset != 0)
+
+    if (systemConfig()->preset != APPLY_NONE)
     {
-      systemConfigMutable()->preset = 0;
+      systemConfigMutable()->preset = APPLY_NONE;
     }
 }
 

@@ -39,6 +39,18 @@ typedef enum {
     SCHEDULER_OPTIMIZE_RATE_AUTO,
 } schedulerOptimizeRate_e;
 
+typedef enum {
+    APPLY_NONE,
+    QUICKFLASH_6S,
+    ANDREY_6S,
+    BLACKBIRD_6S,
+    FILLTHRILLZ_6S,
+    PIERRE_4S,
+    SKYLION_4S,
+    PROJECT_MOCKINGBIRD,
+    PRESET_COUNT,
+} preset_e;
+
 typedef struct pilotConfig_s {
     char name[MAX_NAME_LENGTH + 1];
     char displayName[MAX_NAME_LENGTH + 1];

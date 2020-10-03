@@ -490,9 +490,14 @@ const char * const lookupTableOsdDisplayPortDevice[] = {
 
 #ifdef USE_OSD
 static const char * const lookupTableOsdLogoOnArming[] = {
-    "OFF", "ON", "FIRST_ARMING",
+    "OFF", "ON", "FIRST_ARMING"
 };
 #endif
+
+const char * const lookupTablePresets[] = {
+    "APPLY_NONE", "QUICKFLASH_6S", "ANDREY_6S", "BLACKBIRD_6S", "FILLTHRILLZ_6S",
+    "PIERRE_4S", "SKYLION_4S", "PROJECT_MOCKINGBIRD"
+};
 
 #define LOOKUP_TABLE_ENTRY(name) { name, ARRAYLEN(name) }
 
@@ -612,6 +617,7 @@ const lookupTableEntry_t lookupTables[] = {
 #ifdef USE_OSD
     LOOKUP_TABLE_ENTRY(lookupTableOsdLogoOnArming),
 #endif
+    LOOKUP_TABLE_ENTRY(lookupTablePresets),
 };
 
 #undef LOOKUP_TABLE_ENTRY
@@ -1076,16 +1082,16 @@ const clivalue_t valueTable[] = {
     { "dynlpf2_type",                VAR_UINT8  | MASTER_VALUE, .config.minmaxUnsigned = { 0,    1 },    PG_GYRO_CONFIG, offsetof(gyroConfig_t, dynlpf2_type) },
     { "dynlpf2_debug",               VAR_UINT8  | MASTER_VALUE, .config.minmaxUnsigned = { 0,    1 },    PG_GYRO_CONFIG, offsetof(gyroConfig_t, dynlpf2_debug) },
 #endif
-    { "dterm_dynlpf2_fmin",                VAR_UINT16 | MASTER_VALUE, .config.minmaxUnsigned = { 0, 1000 },    PG_PID_PROFILE, offsetof(pidProfile_t, dterm_dynlpf2_fmin) },
-    { "dterm_dynlpf2_fmax",                VAR_UINT16 | MASTER_VALUE, .config.minmaxUnsigned = { 0, 1000 },    PG_PID_PROFILE, offsetof(pidProfile_t, dterm_dynlpf2_fmax) },
-    { "dterm_dynlpf2_gain",                VAR_UINT16 | MASTER_VALUE, .config.minmaxUnsigned = { 0,  200 },    PG_PID_PROFILE, offsetof(pidProfile_t, dterm_dynlpf2_gain) },
-    { "dterm_dynlpf2_fc_fc",               VAR_UINT16 | MASTER_VALUE, .config.minmaxUnsigned = { 0,   50 },    PG_PID_PROFILE, offsetof(pidProfile_t, dterm_dynlpf2_fc_fc) },
-    { "dterm_dynlpf2_center_threshold",    VAR_UINT16 | MASTER_VALUE, .config.minmaxUnsigned = { 0,  100 },    PG_PID_PROFILE, offsetof(pidProfile_t, dterm_dynlpf2_center_threshold) },
-    { "dterm_dynlpf2_throttle_threshold",  VAR_UINT16 | MASTER_VALUE, .config.minmaxUnsigned = { 0,  100 },    PG_PID_PROFILE, offsetof(pidProfile_t, dterm_dynlpf2_throttle_threshold) },
-    { "dterm_dynlpf2_throttle_gain",       VAR_UINT16 | MASTER_VALUE, .config.minmaxUnsigned = { 0,  200 },    PG_PID_PROFILE, offsetof(pidProfile_t, dterm_dynlpf2_throttle_gain) },
-    { "dterm_dynlpf2_enable",              VAR_UINT8  | MASTER_VALUE, .config.minmaxUnsigned = { 0,    1 },    PG_PID_PROFILE, offsetof(pidProfile_t, dterm_dynlpf2_enable) },
-    { "dterm_dynlpf2_type",                VAR_UINT8  | MASTER_VALUE, .config.minmaxUnsigned = { 0,    1 },    PG_PID_PROFILE, offsetof(pidProfile_t, dterm_dynlpf2_type) },
-    { "dterm_dynlpf2_debug",               VAR_UINT8  | MASTER_VALUE, .config.minmaxUnsigned = { 0,    1 },    PG_PID_PROFILE, offsetof(pidProfile_t, dterm_dynlpf2_debug) },
+    { "dterm_dynlpf2_fmin",                VAR_UINT16 | PROFILE_VALUE, .config.minmaxUnsigned = { 0, 1000 },    PG_PID_PROFILE, offsetof(pidProfile_t, dterm_dynlpf2_fmin) },
+    { "dterm_dynlpf2_fmax",                VAR_UINT16 | PROFILE_VALUE, .config.minmaxUnsigned = { 0, 1000 },    PG_PID_PROFILE, offsetof(pidProfile_t, dterm_dynlpf2_fmax) },
+    { "dterm_dynlpf2_gain",                VAR_UINT16 | PROFILE_VALUE, .config.minmaxUnsigned = { 0,  200 },    PG_PID_PROFILE, offsetof(pidProfile_t, dterm_dynlpf2_gain) },
+    { "dterm_dynlpf2_fc_fc",               VAR_UINT16 | PROFILE_VALUE, .config.minmaxUnsigned = { 0,   50 },    PG_PID_PROFILE, offsetof(pidProfile_t, dterm_dynlpf2_fc_fc) },
+    { "dterm_dynlpf2_center_threshold",    VAR_UINT16 | PROFILE_VALUE, .config.minmaxUnsigned = { 0,  100 },    PG_PID_PROFILE, offsetof(pidProfile_t, dterm_dynlpf2_center_threshold) },
+    { "dterm_dynlpf2_throttle_threshold",  VAR_UINT16 | PROFILE_VALUE, .config.minmaxUnsigned = { 0,  100 },    PG_PID_PROFILE, offsetof(pidProfile_t, dterm_dynlpf2_throttle_threshold) },
+    { "dterm_dynlpf2_throttle_gain",       VAR_UINT16 | PROFILE_VALUE, .config.minmaxUnsigned = { 0,  200 },    PG_PID_PROFILE, offsetof(pidProfile_t, dterm_dynlpf2_throttle_gain) },
+    { "dterm_dynlpf2_enable",              VAR_UINT8  | PROFILE_VALUE, .config.minmaxUnsigned = { 0,    1 },    PG_PID_PROFILE, offsetof(pidProfile_t, dterm_dynlpf2_enable) },
+    { "dterm_dynlpf2_type",                VAR_UINT8  | PROFILE_VALUE, .config.minmaxUnsigned = { 0,    1 },    PG_PID_PROFILE, offsetof(pidProfile_t, dterm_dynlpf2_type) },
+    { "dterm_dynlpf2_debug",               VAR_UINT8  | PROFILE_VALUE, .config.minmaxUnsigned = { 0,    1 },    PG_PID_PROFILE, offsetof(pidProfile_t, dterm_dynlpf2_debug) },
 #if defined(USE_BATTERY_VOLTAGE_SAG_COMPENSATION)
     { "vbat_sag_compensation",      VAR_UINT8  | PROFILE_VALUE, .config.minmaxUnsigned = { 0, 150 }, PG_PID_PROFILE, offsetof(pidProfile_t, vbat_sag_compensation) },
 #endif
@@ -1192,7 +1198,7 @@ const clivalue_t valueTable[] = {
     { "thrust_linear",              VAR_UINT8 | MASTER_VALUE, .config.minmaxUnsigned = { 0, 150 }, PG_PID_PROFILE, offsetof(pidProfile_t, thrustLinearization) },
 #endif
 #ifdef USE_AIRMODE_LPF
-    { "transient_throttle_limit",   VAR_UINT8 | MASTER_VALUE, .config.minmax = { 0, 30 }, PG_PID_PROFILE, offsetof(pidProfile_t, transient_throttle_limit) },
+    { "transient_throttle_limit",   VAR_UINT8 | PROFILE_VALUE, .config.minmax = { 0, 30 }, PG_PID_PROFILE, offsetof(pidProfile_t, transient_throttle_limit) },
 #endif
 #ifdef USE_INTERPOLATED_SP
     { "ff_interpolate_sp",          VAR_UINT8 | PROFILE_VALUE | MODE_LOOKUP, .config.lookup = {TABLE_INTERPOLATED_SP}, PG_PID_PROFILE, offsetof(pidProfile_t, ff_interpolate_sp) },
@@ -1495,7 +1501,7 @@ const clivalue_t valueTable[] = {
     { "pwr_on_arm_grace",           VAR_UINT8  | MASTER_VALUE, .config.minmaxUnsigned = { 0, 30 }, PG_SYSTEM_CONFIG, offsetof(systemConfig_t, powerOnArmingGraceTime) },
     { "scheduler_optimize_rate",    VAR_UINT8  | MASTER_VALUE | MODE_LOOKUP, .config.lookup = { TABLE_OFF_ON_AUTO }, PG_SYSTEM_CONFIG, offsetof(systemConfig_t, schedulerOptimizeRate) },
     { "enable_stick_arming",        VAR_UINT8  | MASTER_VALUE | MODE_LOOKUP, .config.lookup = { TABLE_OFF_ON }, PG_SYSTEM_CONFIG, offsetof(systemConfig_t, enableStickArming) },
-    { "applyPreset",                VAR_UINT8  | MASTER_VALUE, .config.minmaxUnsigned = { 0, 1 }, PG_SYSTEM_CONFIG, offsetof(systemConfig_t, preset) },
+    { "apply_preset",               VAR_UINT8  | MASTER_VALUE | MODE_LOOKUP, .config.lookup = { TABLE_PRESETS }, PG_SYSTEM_CONFIG, offsetof(systemConfig_t, preset) },
 
 // PG_VTX_CONFIG
 #ifdef USE_VTX_COMMON

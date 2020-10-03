@@ -85,6 +85,11 @@ static const char * const osdTableGyroToUse[] = {
 };
 #endif
 
+static const char * const osdTablePresets[] = {
+  "APPLY_NONE", "QUICKFLASH_6S", "ANDREY_6S", "BLACKBIRD_6S", "FILLTHRILLZ_6S",
+  "PIERRE_4S", "SKYLION_4S", "PROJECT_MOCKINGBIRD"
+};
+
 static const char * const osdTableOnOFF[] = {
     "OFF", "ON"
 };
@@ -288,7 +293,7 @@ static const OSD_Entry cmsx_menuPidEntries[] =
     { "-- PID --", OME_Label, NULL, pidProfileIndexString, 0},
     { "PID ADVANCED", OME_Submenu, cmsMenuChange, &cmsx_menuPidAdvanced, 0 },
 
-    { "PRESET", OME_UINT8, NULL, &(OSD_UINT8_t){ &cmsx_preset,  0, 1, 1 }, 0 },
+    { "PRESET", OME_TAB, NULL, &(OSD_TAB_t){ &cmsx_preset,  PRESET_COUNT - 1, osdTablePresets }, 0 },
 
     { "ROLL  P", OME_UINT8, NULL, &(OSD_UINT8_t){ &tempPid[PID_ROLL][0],  0, 200, 1 }, 0 },
     { "ROLL  I", OME_UINT8, NULL, &(OSD_UINT8_t){ &tempPid[PID_ROLL][1],  0, 200, 1 }, 0 },
