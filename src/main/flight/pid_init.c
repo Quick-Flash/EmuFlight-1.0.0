@@ -194,6 +194,7 @@ void pidInitFilters(const pidProfile_t *pidProfile)
         }
     }
 #endif
+    pt1FilterInit(&transientMix, pt1FilterGain(pidProfile->transient_mix_hz, pidRuntime.dT));
 #if defined(USE_D_MIN)
 
     // Initialize the filters for all axis even if the d_min[axis] value is 0
@@ -311,6 +312,7 @@ void pidInitConfig(const pidProfile_t *pidProfile)
 #if defined(USE_THROTTLE_BOOST)
     throttleBoost = pidProfile->throttle_boost * 0.1f;
 #endif
+    transientMixMultiplier = pidProfile->transient_mix_multiplier / 100.0f;
     pidRuntime.itermRotation = pidProfile->iterm_rotation;
     pidRuntime.antiGravityMode = pidProfile->antiGravityMode;
 

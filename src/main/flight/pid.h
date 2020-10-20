@@ -217,6 +217,9 @@ typedef struct pidProfile_s {
 
     uint8_t i_decay;
     uint8_t i_decay_cutoff;
+
+    uint8_t transient_mix_hz;
+    uint16_t transient_mix_multiplier;
 } pidProfile_t;
 
 PG_DECLARE_ARRAY(pidProfile_t, PID_PROFILE_COUNT, pidProfiles);
@@ -373,6 +376,9 @@ extern uint32_t targetPidLooptime;
 
 extern float throttleBoost;
 extern pt1Filter_t throttleLpf;
+
+extern pt1Filter_t transientMix;
+extern float transientMixMultiplier;
 
 void pidResetIterm(void);
 void pidStabilisationState(pidStabilisationState_e pidControllerState);

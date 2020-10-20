@@ -894,24 +894,6 @@ FAST_CODE_NOINLINE void mixTable(timeUs_t currentTimeUs)
     }
 #endif
 
-    // Find roll/pitch/yaw desired output
-    float motorMix[MAX_SUPPORTED_MOTORS];
-    float motorMixMax = 0, motorMixMin = 0;
-    for (int i = 0; i < motorCount; i++) {
-
-        float mix =
-            scaledAxisPidRoll  * activeMixer[i].roll +
-            scaledAxisPidPitch * activeMixer[i].pitch +
-            scaledAxisPidYaw   * activeMixer[i].yaw;
-
-        if (mix > motorMixMax) {
-            motorMixMax = mix;
-        } else if (mix < motorMixMin) {
-            motorMixMin = mix;
-        }
-        motorMix[i] = mix;
-    }
-
     pidUpdateAntiGravityThrottleFilter(throttle);
 
 #ifdef USE_DYN_LPF
@@ -940,20 +922,76 @@ FAST_CODE_NOINLINE void mixTable(timeUs_t currentTimeUs)
 
     mixerThrottle = throttle;
 
-    motorMixRange = motorMixMax - motorMixMin;
-    if (motorMixRange > 1.0f && (getDetectedMotorType() != MOTOR_BRUSHED)) {
-        for (int i = 0; i < motorCount; i++) {
-            motorMix[i] /= motorMixRange;
-        }
-        // Get the maximum correction by setting offset to center when airmode enabled
-        if (airmodeEnabled) {
-            throttle = 0.5f;
-        }
-    } else {
-        if (airmodeEnabled || throttle > 0.5f) {  // Only automatically adjust throttle when airmode enabled. Airmode logic is always active on high throttle
-            throttle = constrainf(throttle, -motorMixMin, 1.0f - motorMixMax);
-        }
+    // Find roll/pitch/yaw desired output
+    float minMix = 1000.0f;
+    float maxMix = -1000.0f;
+    float motorMix[MAX_SUPPORTED_MOTORS];
+    for (int i = 0; i < motorCount; i++) {
+        float mix =
+            throttle * currentMixer[i].throttle +
+            scaledAxisPidRoll  * currentMixer[i].roll +
+            scaledAxisPidPitch * currentMixer[i].pitch +
+            scaledAxisPidYaw   * currentMixer[i].yaw;
+
+            if (mix < minMix) {
+              minMix = mix;
+            }
+            if (mix > maxMix) {
+              maxMix = mix;
+            }
+
+            motorMix[i] = mix;
     }
+
+    		motorMixRange = maxMix - minMix;
+    		float reduceAmount = 0.0f;
+    		if (motorMixRange > 1.0f) {
+    			const float scale = 1.0f / motorMixRange;
+    			for (int i = 0; i < motorCount; ++i) {
+    				motorMix[i] *= scale;
+    			}
+    			minMix *= scale;
+    			reduceAmount = minMix;
+    		} else {
+    			if (maxMix > 1.0f) {
+    				reduceAmount = maxMix - 1.0f;
+    			} else if (minMix < 0.0f) {
+    				reduceAmount = minMix;
+    			}
+    		}
+
+        //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        //NOTE FOR QUICKFLASH, try to rewrite this but do it using pidsum change vs stick change!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        //NOTE FOR QUICKFLASH, try the stick change version as well, maybe!!!!!!!!!!!!!!
+        //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+          static float lastScaledAxisPidRoll, lastScaledAxisPidPitch, lastScaledAxisPidYaw;
+            float absSpeedScaledAxisPidRoll = fabsf(scaledAxisPidRoll - lastScaledAxisPidRoll) * pidGetPidFrequency() * transientMixMultiplier;
+            lastScaledAxisPidRoll = scaledAxisPidRoll;
+
+            float absSpeedScaledAxisPidPitch = fabsf(scaledAxisPidPitch - lastScaledAxisPidPitch) * pidGetPidFrequency() * transientMixMultiplier;
+            lastScaledAxisPidPitch = scaledAxisPidPitch;
+
+            float absSpeedScaledAxisPidYaw = fabsf(scaledAxisPidYaw - lastScaledAxisPidYaw) * pidGetPidFrequency() * transientMixMultiplier;
+            lastScaledAxisPidYaw = scaledAxisPidYaw;
+
+            float maxSpeedScaledAxisPid = MAX(absSpeedScaledAxisPidRoll, MAX(absSpeedScaledAxisPidPitch, absSpeedScaledAxisPidYaw));
+
+          float transientMixIncreaseLimit = pt1FilterApply(&transientMix, maxSpeedScaledAxisPid);
+          if (transientMixIncreaseLimit > 1.0f) {
+            transientMixIncreaseLimit = 1.0f;
+          }
+
+    		if (reduceAmount > 0.0f || (airmodeEnabled && reduceAmount != 0.0f)) {
+    			 if (reduceAmount < -transientMixIncreaseLimit &&
+    			    maxMix > motorOutputMin + 0.1f) // Do not apply the limit on idling (e.g. after throttle punches) to prevent from slow wobbles.
+    			{
+    				reduceAmount = -transientMixIncreaseLimit;
+    			}
+    		for (int i = 0; i < motorCount; ++i) {
+    				motorMix[i] -= reduceAmount;
+    		}
+      }
 
     if (featureIsEnabled(FEATURE_MOTOR_STOP)
         && ARMING_FLAG(ARMED)

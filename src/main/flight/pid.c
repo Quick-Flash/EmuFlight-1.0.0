@@ -84,6 +84,8 @@ FAST_DATA_ZERO_INIT pidRuntime_t pidRuntime;
 FAST_DATA_ZERO_INIT float throttleBoost;
 pt1Filter_t throttleLpf;
 #endif
+pt1Filter_t transientMix;
+FAST_DATA_ZERO_INIT float transientMixMultiplier;
 
 PG_REGISTER_WITH_RESET_TEMPLATE(pidConfig_t, pidConfig, PG_PID_CONFIG, 2);
 
@@ -209,6 +211,8 @@ void resetPidProfile(pidProfile_t *pidProfile)
         .dtermBoostLimit = 0,
         .i_decay = 4,
         .i_decay_cutoff = 200,
+        .transient_mix_hz = 25,
+        .transient_mix_multiplier = 2000,
     );
 }
 
