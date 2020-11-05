@@ -216,7 +216,7 @@ bool isRpmFilterEnabled(void)
     return (motorConfig()->dev.useDshotTelemetry && rpmFilterConfig()->gyro_rpm_notch_harmonics);
 }
 
-float rpmMinMotorFrequency()
+float rpmMinMotorFrequency(void)
 {
     if (minMotorFrequency == 0.0f) {
         minMotorFrequency = 10000.0f;
@@ -229,5 +229,8 @@ float rpmMinMotorFrequency()
     return minMotorFrequency;
 }
 
+float motorRPM(int motorNumber) {
+  return filteredMotorErpm[motorNumber];
+}
 
 #endif

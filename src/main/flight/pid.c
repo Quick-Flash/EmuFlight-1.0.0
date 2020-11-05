@@ -209,6 +209,7 @@ void resetPidProfile(pidProfile_t *pidProfile)
         .dtermBoostLimit = 0,
         .i_decay = 4,
         .i_decay_cutoff = 200,
+        .min_motor_rpm = 1000,
     );
 }
 

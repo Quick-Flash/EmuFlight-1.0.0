@@ -36,6 +36,7 @@ PG_DECLARE(rpmFilterConfig_t, rpmFilterConfig);
 
 void  rpmFilterInit(const rpmFilterConfig_t *config);
 float rpmFilterGyro(int axis, float values);
-void  rpmFilterUpdate();
+void  rpmFilterUpdate(void);
 bool isRpmFilterEnabled(void);
-float rpmMinMotorFrequency();
+float rpmMinMotorFrequency(void);
+float motorRPM(int motorNumber);

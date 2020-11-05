@@ -49,6 +49,7 @@ typedef struct mixerRuntime_s {
     float vbatFull;
     float vbatRangeToCompensate;
 #endif
+    float motorMinRPM;
 } mixerRuntime_t;
 
 extern mixerRuntime_t mixerRuntime;

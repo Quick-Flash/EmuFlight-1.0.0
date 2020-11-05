@@ -315,6 +315,8 @@ void mixerInitProfile(void)
         }
     }
 #endif
+
+    mixerRuntime.motorMinRPM = currentPidProfile->min_motor_rpm * motorConfig()->motorPoleCount / 200.0f;
 }
 
 #ifdef USE_LAUNCH_CONTROL

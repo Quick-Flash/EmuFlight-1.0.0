@@ -343,15 +343,43 @@ static void applyFlipOverAfterCrashModeToMotors(void)
     }
 }
 
+static FAST_DATA_ZERO_INIT float motorKi[MAX_SUPPORTED_MOTORS];
+static FAST_DATA float rpmScaleFixer;
+
 static void applyMixToMotors(float motorMix[MAX_SUPPORTED_MOTORS], motorMixer_t *activeMixer)
 {
     // Now add in the desired throttle, but keep in a range that doesn't clip adjusted
     // roll/pitch/yaw. This could move throttle down, but also up for those low throttle flips.
     for (int i = 0; i < mixerRuntime.motorCount; i++) {
         float motorOutput = motorOutputMixSign * motorMix[i] + throttle * activeMixer[i].throttle;
+
+        float motorKiAvg;
+        if (i == 0 && motorKiAvg == 0.0f) {
+          motorKiAvg = 0;
+          motorKiAvg = motorKiAvg + (motorKi[i] / mixerRuntime.motorCount);
+        } else {
+          motorKiAvg = motorKiAvg + (motorKi[i] / mixerRuntime.motorCount);
+
+          if ((i == mixerRuntime.motorCount - 1) && motorKiAvg > 0.01f) {
+            rpmScaleFixer = rpmScaleFixer + motorKi[i];
+          }
+        }
+
+        float convertRPMToMotorOutput = constrainf(scaleRangef(motorRPM(i), mixerRuntime.motorMinRPM, mixerRuntime.motorMinRPM + rpmScaleFixer, 0.0f, 1.0f), 0.0f, 1.0f);
+        float motorError = motorOutput - convertRPMToMotorOutput;
+        motorKi[i] = constrainf(motorKi[i] + motorError * 0.1f, -0.3, 0.3);
+
+        if (i == 0) {
+          DEBUG_SET(DEBUG_MOTOR_PID, 0, (mixerRuntime.motorMinRPM + rpmScaleFixer) / 100);
+          DEBUG_SET(DEBUG_MOTOR_PID, 1, motorError * 1000);
+          DEBUG_SET(DEBUG_MOTOR_PID, 2, motorKi[i] * 1000);
+          DEBUG_SET(DEBUG_MOTOR_PID, 3, 500);
+        }
+
 #ifdef USE_THRUST_LINEARIZATION
         motorOutput = pidApplyThrustLinearization(motorOutput);
 #endif
+
         motorOutput = motorOutputMin + motorOutputRange * motorOutput;
 
 #ifdef USE_SERVOS
@@ -365,9 +393,9 @@ static void applyMixToMotors(float motorMix[MAX_SUPPORTED_MOTORS], motorMixer_t 
                 motorOutput = (motorOutput < motorRangeMin) ? mixerRuntime.disarmMotorOutput : motorOutput; // Prevent getting into special reserved range
             }
 #endif
-            motorOutput = constrain(motorOutput, mixerRuntime.disarmMotorOutput, motorRangeMax);
+            motorOutput = constrainf(motorOutput, mixerRuntime.disarmMotorOutput, motorRangeMax);
         } else {
-            motorOutput = constrain(motorOutput, motorRangeMin, motorRangeMax);
+            motorOutput = constrainf(motorOutput, motorRangeMin, motorRangeMax);
         }
         motor[i] = motorOutput;
     }

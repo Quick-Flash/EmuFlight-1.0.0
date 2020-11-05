@@ -96,4 +96,5 @@ const char * const debugModeNames[DEBUG_COUNT] = {
     "D_LPF",
     "VTX_TRAMP",
     "DYN_LPF2",
+    "MOTOR_PID"
 };

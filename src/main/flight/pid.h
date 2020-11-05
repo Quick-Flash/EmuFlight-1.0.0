@@ -217,6 +217,8 @@ typedef struct pidProfile_s {
 
     uint8_t i_decay;
     uint8_t i_decay_cutoff;
+
+    uint16_t min_motor_rpm;
 } pidProfile_t;
 
 PG_DECLARE_ARRAY(pidProfile_t, PID_PROFILE_COUNT, pidProfiles);
