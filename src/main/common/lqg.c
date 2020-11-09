@@ -181,23 +181,23 @@ FAST_CODE int rtkf_calculate_covariance_3x3(float A[3][3], float K[3], float P[3
 	Kalman prediction
 	X_k+1 = AX_k + Bu_k + K(y - HX)
 */
-FAST_CODE void rtkf_prediction_step(float A[3][3], float B[3], float K[3], float X[3], float signal, float input)
+FAST_CODE void rtkf_prediction_step(float A[3][3], float B[3], float K[3], float X[3], float gyro, float pidsum)
 {
 	float nX0, nX1, nX2;
 
-	nX0 = B0*input + A00*X0 + A01*X1 + A02*X2;
-	nX1 = B1*input + A11*X1 + A12*X2;
-	nX2 = B2*input + A22*X2;
+	nX0 = B0*pidsum + A00*X0 + A01*X1 + A02*X2;
+	nX1 = B1*pidsum + A11*X1 + A12*X2;
+	nX2 = B2*pidsum + A22*X2;
 
-	X0 = nX0 - K0*(nX0 - signal);
-	X1 = nX1 - K1*(nX0 - signal);
-	float in2 = input*input;
-	X2 = (nX2 - K2*(nX0 - signal)) * constrainf(1.0f - in2*in2, 0, 1.0f);
+	X0 = nX0 - K0*(nX0 - gyro);
+	X1 = nX1 - K1*(nX0 - gyro);
+	float in2 = pidsum*pidsum;
+	X2 = (nX2 - K2*(nX0 - gyro)) * constrainf(1.0f - in2*in2, 0, 1.0f);
 }
 
-FAST_CODE void rtkf_predict_axis(rtkf_state_t *rtkf, float signal, float input, float Xout[3])
+FAST_CODE void rtkf_predict_axis(rtkf_state_t *rtkf, float gyro, float pidsum, float Xout[3])
 {
-	rtkf_prediction_step(rtkf->A, rtkf->B, rtkf->K, rtkf->X, signal, input);
+	rtkf_prediction_step(rtkf->A, rtkf->B, rtkf->K, rtkf->X, gyro, pidsum);
 
 	rtkf->X2 = MIN(rtkf->X2, rtkf->biaslim);
 
@@ -403,10 +403,10 @@ void lqr_get_gains(lqr_state_t *lqr, float K[2])
 	RTKF to go overboard with predicting, when the LQR is trying to demand a lot from the
 	actuators.
 */
-FAST_CODE float lqg_controller(rtkf_state_t *rtkf, lqr_state_t *lqr, float signal, float setpoint)
+FAST_CODE float lqg_controller(rtkf_state_t *rtkf, lqr_state_t *lqr, float gyro, float setpoint)
 {
 	float x_est[3]; /* Rate, Torque, Bias */
-	rtkf_predict_axis(rtkf, signal, lqr->u, x_est);
+	rtkf_predict_axis(rtkf, gyro, lqr->u, x_est);
 
 	float xr0 = x_est[0] - setpoint;
 
