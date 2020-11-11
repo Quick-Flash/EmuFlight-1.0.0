@@ -124,7 +124,7 @@ static void resetFlightDynamicsTrims(flightDynamicsTrims_t *accZero)
 void pgResetFn_accelerometerConfig(accelerometerConfig_t *instance)
 {
     RESET_CONFIG_2(accelerometerConfig_t, instance,
-        .acc_lpf_hz = 10,
+        .acc_abg_alpha = 100,
         .acc_hardware = ACC_DEFAULT,
         .acc_high_fsr = false,
     );
@@ -339,11 +339,11 @@ void accInitFilters(void)
 {
     // Only set the lowpass cutoff if the ACC sample rate is detected otherwise
     // the filter initialization is not defined (sample rate = 0)
-    accelerationRuntime.accLpfCutHz = (acc.sampleRateHz) ? accelerometerConfig()->acc_lpf_hz : 0;
+    accelerationRuntime.accLpfCutHz = (acc.sampleRateHz) ? accelerometerConfig()->acc_abg_alpha : 0;
     if (accelerationRuntime.accLpfCutHz) {
-        const uint32_t accSampleTimeUs = 1e6 / acc.sampleRateHz;
+        const uint32_t accSampleTimeUs = 1 / acc.sampleRateHz;
         for (int axis = 0; axis < XYZ_AXIS_COUNT; axis++) {
-            biquadFilterInitLPF(&accelerationRuntime.accFilter[axis], accelerationRuntime.accLpfCutHz, accSampleTimeUs);
+            ABGInit(&accelerationRuntime.accFilter[axis], accelerationRuntime.accLpfCutHz, accSampleTimeUs);
         }
     }
 }
@@ -380,6 +380,7 @@ bool accInit(uint16_t accSampleRateHz)
     acc.dev.acc_1G_rec = 1.0f / acc.dev.acc_1G;
 
     acc.sampleRateHz = accSampleRateHz;
+
     accInitFilters();
     return true;
 }

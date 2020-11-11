@@ -97,7 +97,6 @@ int levelRecoveryStrength = 0;
 
 static float throttleAngleScale;
 static int throttleAngleValue;
-static float fc_acc;
 static float smallAngleCosZ = 0;
 
 static imuRuntimeConfig_t imuRuntimeConfig;
@@ -166,10 +165,6 @@ STATIC_UNIT_TESTED void imuComputeRotationMatrix(void){
 /*
 * Calculate RC time constant used in the accZ lpf.
 */
-static float calculateAccZLowPassFilterRCTimeConstant(float accz_lpf_cutoff)
-{
-    return 0.5f / (M_PIf * accz_lpf_cutoff);
-}
 
 static float calculateThrottleAngleScale(uint16_t throttle_correction_angle)
 {
@@ -188,7 +183,6 @@ void imuConfigure(uint16_t throttle_correction_angle, uint8_t throttle_correctio
 
     smallAngleCosZ = cos_approx(degreesToRadians(imuConfig()->small_angle));
 
-    fc_acc = calculateAccZLowPassFilterRCTimeConstant(5.0f); // Set to fix value
     throttleAngleScale = calculateThrottleAngleScale(throttle_correction_angle);
 
     throttleAngleValue = throttle_correction_value;
