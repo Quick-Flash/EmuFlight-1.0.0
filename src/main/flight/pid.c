@@ -891,7 +891,7 @@ void FAST_CODE pidController(const pidProfile_t *pidProfile)
         lqg_run_covariance(&pidRuntime.rtkf[axis], &pidRuntime.lqr[axis]);
         // calculating the PID sum
         // need to fix this refactor a lot of code, but multiply this by 1000 so that these gains are correct otherwise the ff would be wrong as well. oh well.
-        pidData[axis].P = lqg_controller(&pidRuntime.rtkf[axis], &pidRuntime.lqr[axis], gyroRate, currentPidSetpoint) * 100.0f0;
+        pidData[axis].P = lqg_controller(&pidRuntime.rtkf[axis], &pidRuntime.lqr[axis], gyroRate, currentPidSetpoint) * 1000.0f;
         pidData[axis].I = 0;
         pidData[axis].D = 0;
 
