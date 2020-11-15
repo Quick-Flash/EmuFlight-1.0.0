@@ -186,7 +186,7 @@ void resetPidProfile(pidProfile_t *pidProfile)
         .launchControlAngleLimit = 0,
         .launchControlGain = 40,
         .launchControlAllowTriggerReset = true,
-        .use_integrated_yaw = false,
+        .use_integrated_yaw = true,
         .integrated_yaw_relax = 200,
         .thrustLinearization = 0,
         .d_min = { 23, 25, 0 },      // roll, pitch, yaw
@@ -891,12 +891,15 @@ void FAST_CODE pidController(const pidProfile_t *pidProfile)
         lqg_run_covariance(&pidRuntime.rtkf[axis], &pidRuntime.lqr[axis]);
         // calculating the PID sum
         // need to fix this refactor a lot of code, but multiply this by 1000 so that these gains are correct otherwise the ff would be wrong as well. oh well.
-        pidData[axis].P = lqg_controller(&pidRuntime.rtkf[axis], &pidRuntime.lqr[axis], gyroRate, currentPidSetpoint) * 500;
+        pidData[axis].P = lqg_controller(&pidRuntime.rtkf[axis], &pidRuntime.lqr[axis], gyroRate, currentPidSetpoint) * 100.0f0;
         pidData[axis].I = 0;
         pidData[axis].D = 0;
 
         const float pidSum = pidData[axis].P + pidData[axis].I + pidData[axis].D + pidData[axis].F;
-        {
+        if (axis == FD_YAW && pidRuntime.useIntegratedYaw) {
+            pidData[axis].Sum += pidSum * pidRuntime.dT * 100.0f;
+            pidData[axis].Sum -= pidData[axis].Sum * pidRuntime.integratedYawRelax / 100000.0f * pidRuntime.dT / 0.000125f;
+        } else {
             pidData[axis].Sum = pidSum;
         }
     }
