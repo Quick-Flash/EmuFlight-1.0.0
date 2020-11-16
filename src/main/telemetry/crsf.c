@@ -281,6 +281,8 @@ void crsfFrameFlightMode(sbuf_t *dst)
         flightMode = "STAB";
     } else if (FLIGHT_MODE(HORIZON_MODE)) {
         flightMode = "HOR";
+    } else if (FLIGHT_MODE(AUTOTUNE)) {
+        flightMode = "AUTO";
     } else if (airmodeIsEnabled()) {
         flightMode = "AIR";
     }
