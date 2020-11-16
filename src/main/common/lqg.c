@@ -181,6 +181,7 @@ FAST_CODE int rtkf_calculate_covariance_3x3(float A[3][3], float K[3], float P[3
 	Kalman prediction
 	X_k+1 = AX_k + Bu_k + K(y - HX)
 */
+
 FAST_CODE void rtkf_prediction_step(float A[3][3], float B[3], float K[3], float X[3], float gyro, float pidsum)
 {
 	float nX0, nX1, nX2;
@@ -215,6 +216,7 @@ FAST_CODE void rtkf_predict_axis(rtkf_state_t *rtkf, float gyro, float pidsum, f
 	    [   1-e^(-Ts/tau)                        ]
 	    [   0                                    ]
 */
+
 void rtkf_initialize_matrices_int(float A[3][3], float B[3], float beta, float tau, float Ts)
 {
 	A00 = 1;
@@ -233,6 +235,7 @@ void rtkf_initialize_matrices_int(float A[3][3], float B[3], float beta, float t
 	Q matrix set by experimentation.
 	R = 1000 seems a workable value for raw gyro input.
 */
+
 void rtkf_create(rtkf_state_t *state, float beta, float tau, float Ts, float R, float q1, float q2, float q3, float biaslim)
 {
 	rtkf_initialize_matrices_int(state->A, state->B, expf(beta), tau, Ts);
@@ -277,27 +280,19 @@ FAST_CODE int lqr_calculate_covariance_2x2(float A[2][2], float B[2], float K[2]
 
 	nP[0][0] = (Q00*R + P00*(A00A00*R + B0B0*Q00) +
 		B1B1*(P11*Q00 + A00A00*(P00P11 - P01P10)) +
-		B0B1*Q00*(P01 + P10))
-	    /
-	    div;
+		B0B1*Q00*(P01 + P10)) / div;
 
 	float common = A01*(P00*R + B1B1*(P00P11 - P01P10)) - A11*B0B1*(P00P11 + P01P10);
 
-	nP[1][0] = (A00*(A11*P10*R + common))
-	    /
-	    div;
+	nP[1][0] = (A00*(A11*P10*R + common)) / div;
 
-	nP[0][1] = (A00*(A11*P01*R + common))
-	    /
-	    div;
+	nP[0][1] = (A00*(A11*P01*R + common)) / div;
 
 	nP[1][1] = (Q11*R + A01A01*P00*R + B0B0*P00*Q11 +
 		A11A11*(P11*R + B0B0*(P00P11 - P01P10)) +
 		B1B1*(P11*Q11 + A01A01*P00P11 - A01A01*P01P10) +
 		A01*A11*P01*R + A01*A11*P10*R + B0B1*P01*Q11 +
-		B0B1*(P10*Q11 - 2*A01*A11*P00P11 + 2*A01*A11*P01P10))
-		/
-		div;
+		B0B1*(P10*Q11 - 2*A01*A11*P00P11 + 2*A01*A11*P01P10)) / div;
 
 	P00 = nP[0][0];
 	P01 = nP[0][1];
@@ -410,9 +405,7 @@ FAST_CODE float lqg_controller(rtkf_state_t *rtkf, lqr_state_t *lqr, float gyro,
 
 	float xr0 = x_est[0] - setpoint;
 
-	float u = x_est[2] - lqr->K0 * xr0 - lqr->K1 * x_est[1];
-	if (u < -1) u = -1;
-	else if (u > 1) u = 1;
+	float u = constrainf(x_est[2] - lqr->K0 * xr0 - lqr->K1 * x_est[1], -1.0f, 1.0f);
 
 	lqr->u = u;
 
@@ -420,12 +413,12 @@ FAST_CODE float lqg_controller(rtkf_state_t *rtkf, lqr_state_t *lqr, float gyro,
 }
 
 // for logging in the future
-// void lqg_get_rtkf_state(rtkf_state_t *rtkf, float *rate, float *torque, float *bias)
-// {
-// 	*rate = rtkf->rtkf->X[0];
-// 	*torque = rtkf->rtkf->X[1];
-// 	*bias = rtkf->rtkf->X[2];
-// }
+float lqg_get_rtkf_state(rtkf_state_t *rtkf)
+{
+//	return rtkf->X0;
+	return rtkf->X1;
+//  return rtkf->X2;
+}
 
 // void lqg_set_x0(lqg_t lqg, float x0)
 // {

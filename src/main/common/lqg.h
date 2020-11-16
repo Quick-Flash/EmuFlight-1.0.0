@@ -78,7 +78,7 @@ extern void lqg_run_covariance(rtkf_state_t *rtkf, lqr_state_t *lqg);
 extern float lqg_controller(rtkf_state_t *rtkf, lqr_state_t *lqg, float signal, float setpoint);
 
 // extern void lqg_set_x0(lqg_t lqq, float x0);
-// void lqg_get_rtkf_state(lqg_t lqg, float *rate, float *torque, float *bias);
+float lqg_get_rtkf_state(rtkf_state_t *rtkf);
 
 /**
  * @}

@@ -895,12 +895,15 @@ void FAST_CODE pidController(const pidProfile_t *pidProfile)
         pidData[axis].I = 0;
         pidData[axis].D = 0;
 
-        const float pidSum = pidData[axis].P + pidData[axis].I + pidData[axis].D + pidData[axis].F;
+        DEBUG_SET(DEBUG_KALMAN_GYRO, axis, lrintf(lqg_get_rtkf_state(&pidRuntime.rtkf[axis])));
+
+
         if (axis == FD_YAW && pidRuntime.useIntegratedYaw) {
-            pidData[axis].Sum += pidSum * pidRuntime.dT * 100.0f;
-            pidData[axis].Sum -= pidData[axis].Sum * pidRuntime.integratedYawRelax / 100000.0f * pidRuntime.dT / 0.000125f;
+            pidData[axis].P += pidData[axis].P * pidRuntime.dT * 100.0f;
+            pidData[axis].P -= pidData[axis].P * pidRuntime.integratedYawRelax / 100000.0f * pidRuntime.dT / 0.000125f;
+            pidData[axis].Sum = pidData[axis].P + pidData[axis].F;
         } else {
-            pidData[axis].Sum = pidSum;
+            pidData[axis].Sum = pidData[axis].P + pidData[axis].F;
         }
     }
 
