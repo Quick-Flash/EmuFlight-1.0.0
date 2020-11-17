@@ -557,13 +557,6 @@ float stickPositionAttenuation(int axis, int pid) {
     return 1 + (getRcDeflectionAbs(axis) * pidRuntime.stickPositionTransition[pid][axis]);
 }
 
-float autoTune(int axis, const pidProfile_t *pidProfile, const rollAndPitchTrims_t *angleTrim) {
-    if ((getRcDeflectionAbs(FD_ROLL) > 0.1f) || (getRcDeflectionAbs(FD_PITCH) > 0.1f) || (getRcDeflectionAbs(FD_YAW) > 0.1f)) {
-      return currentPidSetpoint = pidLevel(axis, pidProfile, angleTrim, 0.0f);
-    }
-    return 0.0f;
-}
-
 // EmuFlight pid controller, which will be maintained in the future with additional features specialised for current (mini) multirotor usage.
 // Based on 2DOF reference design (matlab)
 void FAST_CODE pidController(const pidProfile_t *pidProfile)
@@ -642,7 +635,6 @@ void FAST_CODE pidController(const pidProfile_t *pidProfile)
         // When Race Mode is active PITCH control is also GYRO based in level or horizon mode
         float currentPidSetpoint = getSetpointRate(axis);
 #if defined(USE_ACC)
-        if FLIGHT_MODE(!AUTOTUNE) {
         switch (levelMode) {
         case LEVEL_MODE_OFF:
 
@@ -658,11 +650,6 @@ void FAST_CODE pidController(const pidProfile_t *pidProfile)
                 break;
             }
             currentPidSetpoint = pidLevel(axis, pidProfile, angleTrim, currentPidSetpoint);
-          }
-        }
-
-        if FLIGHT_MODE(AUTOTUNE) {
-            currentPidSetpoint = autoTune(axis, pidProfile, angleTrim);
         }
 #endif
 
