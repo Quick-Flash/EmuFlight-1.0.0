@@ -83,6 +83,21 @@ typedef struct pidf_s {
     uint16_t F;
 } pidf_t;
 
+typedef struct autoTune_s {
+    bool ptermFinished[XYZ_AXIS_COUNT];
+    bool itermFinished[XYZ_AXIS_COUNT];
+    bool dtermFinished[XYZ_AXIS_COUNT];
+    bool ffFinished[XYZ_AXIS_COUNT];
+    bool emuBoostFinished;
+    bool emuBoostYawFinished;
+    bool dtermBoostFinished;
+    bool thrustLinearFinished;
+    bool setpointSignificantlyChanging[XYZ_AXIS_COUNT];
+    float averageError[XYZ_AXIS_COUNT];
+
+
+} autoTune_t
+
 typedef enum {
     ANTI_GRAVITY_SMOOTH,
     ANTI_GRAVITY_STEP
