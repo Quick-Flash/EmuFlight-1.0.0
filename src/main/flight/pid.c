@@ -562,27 +562,22 @@ float stickPositionAttenuation(int axis, int pid) {
 }
 
 FAST_DATA_ZERO_INIT float oscilate[XYZ_AXIS_COUNT];
-FAST_DATA_ZERO_INIT int oscilateSign[XYZ_AXIS_COUNT];
 
 float autoTune(const pidProfile_t *pidProfile, int axis, float setpoint) {
     if (!pidProfile->auto_tune) {
         return setpoint;
     }
-    if (oscilateSign[axis] != -1 || oscilateSign[axis] != 1) {
-        oscilateSign[axis] = 1.0f;
-        oscilate[axis] = 0.0f;
-    }
 
     if (axis != FD_YAW) {
-        oscilate[axis] = oscilate[axis] + pidProfile->auto_tune_time * pidRuntime.dT * oscilateSign[axis];
+        oscilate[axis] = oscilate[axis] + pidProfile->auto_tune_time * pidRuntime.dT;
         //oscilate[axis] += .001;
     } else {
-        oscilate[axis] = oscilate[axis] + pidProfile->auto_tune_time_yaw * pidRuntime.dT * oscilateSign[axis];
+        oscilate[axis] = oscilate[axis] + pidProfile->auto_tune_time_yaw * pidRuntime.dT;
     }
-    if (fabsf(oscilate[axis]) > 1.0f) {
-        oscilateSign[axis] = oscilateSign[axis] * -1;
+    if (fabsf(oscilate[axis]) > (2 * M_PIf)) {
+        oscilate[axis] = oscilate[axis] - (2 * M_PIf);
     }
-    return setpoint += oscilate[axis] * (pidProfile->auto_tune_oscilation);
+    return setpoint += (pidProfile->auto_tune_oscilation) * (sin_approx(oscilate[axis]));
 }
 
 // EmuFlight pid controller, which will be maintained in the future with additional features specialised for current (mini) multirotor usage.
