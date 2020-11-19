@@ -93,10 +93,12 @@ typedef struct autoTune_s {
     bool dtermBoostFinished;
     bool thrustLinearFinished;
     bool setpointSignificantlyChanging[XYZ_AXIS_COUNT];
+    uint8_t maxSetpointOscilation;
     float averageError[XYZ_AXIS_COUNT];
-
-
-} autoTune_t
+    uint8_t numberOscilations[XYZ_AXIS_COUNT];
+    float oscilateTime[XYZ_AXIS_COUNT];
+    int oscilateSign[XYZ_AXIS_COUNT];
+} autoTune_t;
 
 typedef enum {
     ANTI_GRAVITY_SMOOTH,
@@ -200,6 +202,10 @@ typedef struct pidProfile_s {
 
     uint16_t dtermAlpha;
 
+    uint8_t auto_tune_time;
+    uint8_t auto_tune_time_yaw;
+    uint8_t auto_tune;
+    uint8_t auto_tune_oscilation;
 } pidProfile_t;
 
 PG_DECLARE_ARRAY(pidProfile_t, PID_PROFILE_COUNT, pidProfiles);
@@ -252,6 +258,9 @@ typedef struct pidRuntime_s {
     alphaBetaGammaFilter_t dtermABG[XYZ_AXIS_COUNT];
     filterApplyFnPtr ptermYawLowpassApplyFn;
     pt1Filter_t ptermYawLowpass;
+
+    autoTune_t autoTune;
+
     bool antiGravityEnabled;
     uint8_t antiGravityMode;
     pt1Filter_t antiGravityThrottleLpf;

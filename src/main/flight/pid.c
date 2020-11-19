@@ -200,6 +200,10 @@ void resetPidProfile(pidProfile_t *pidProfile)
         .dynThr = { 75, 125, 65 },
         .tpa_breakpoint = 1350,
         .dtermAlpha = 0,
+        .auto_tune = 0,
+        .auto_tune_time = 5,
+        .auto_tune_time_yaw = 5,
+        .auto_tune_oscilation = 20,
     );
 }
 
@@ -557,6 +561,30 @@ float stickPositionAttenuation(int axis, int pid) {
     return 1 + (getRcDeflectionAbs(axis) * pidRuntime.stickPositionTransition[pid][axis]);
 }
 
+FAST_DATA_ZERO_INIT float oscilate[XYZ_AXIS_COUNT];
+FAST_DATA_ZERO_INIT int oscilateSign[XYZ_AXIS_COUNT];
+
+float autoTune(const pidProfile_t *pidProfile, int axis, float setpoint) {
+    if (!pidProfile->auto_tune) {
+        return setpoint;
+    }
+    if (oscilateSign[axis] != -1 || oscilateSign[axis] != 1) {
+        oscilateSign[axis] = 1.0f;
+        oscilate[axis] = 0.0f;
+    }
+
+    if (axis != FD_YAW) {
+        oscilate[axis] = oscilate[axis] + pidProfile->auto_tune_time * pidRuntime.dT * oscilateSign[axis];
+        //oscilate[axis] += .001;
+    } else {
+        oscilate[axis] = oscilate[axis] + pidProfile->auto_tune_time_yaw * pidRuntime.dT * oscilateSign[axis];
+    }
+    if (fabsf(oscilate[axis]) > 1.0f) {
+        oscilateSign[axis] = oscilateSign[axis] * -1;
+    }
+    return setpoint += oscilate[axis] * (pidProfile->auto_tune_oscilation);
+}
+
 // EmuFlight pid controller, which will be maintained in the future with additional features specialised for current (mini) multirotor usage.
 // Based on 2DOF reference design (matlab)
 void FAST_CODE pidController(const pidProfile_t *pidProfile)
@@ -662,6 +690,9 @@ void FAST_CODE pidController(const pidProfile_t *pidProfile)
 #endif
         }
 #endif
+        currentPidSetpoint = autoTune(pidProfile, axis, currentPidSetpoint);
+        DEBUG_SET(DEBUG_AUTOTUNE, axis, lrintf(oscilate[axis] * 1000.0f));
+
         // Handle yaw spin recovery - zero the setpoint on yaw to aid in recovery
         // It's not necessary to zero the set points for R/P because the PIDs will be zeroed below
 #ifdef USE_YAW_SPIN_RECOVERY
