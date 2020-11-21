@@ -843,7 +843,7 @@ static const void *cmsx_menuDynFilt_onExit(displayPort_t *pDisp, const OSD_Entry
 #endif
     gyroConfigMutable()->alpha          = gyroConfig_alpha;
     gyroConfigMutable()->alphaYaw       = gyroConfig_alphaYaw;
-    pidProfile->dtermAlpha             = dterm_alpha;
+    pidProfile->dtermAlpha              = dterm_alpha;
     return NULL;
 }
 

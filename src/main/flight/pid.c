@@ -59,6 +59,8 @@
 #include "sensors/battery.h"
 #include "sensors/gyro.h"
 
+#include "config/config.h"
+
 #include "pid.h"
 
 typedef enum {
@@ -201,8 +203,7 @@ void resetPidProfile(pidProfile_t *pidProfile)
         .tpa_breakpoint = 1350,
         .dtermAlpha = 0,
         .auto_tune = 0,
-        .auto_tune_time = 5,
-        .auto_tune_time_yaw = 5,
+        .auto_tune_time = 10,
         .auto_tune_oscilation = 20,
     );
 }
@@ -561,20 +562,134 @@ float stickPositionAttenuation(int axis, int pid) {
     return 1 + (getRcDeflectionAbs(axis) * pidRuntime.stickPositionTransition[pid][axis]);
 }
 
-float autoTune(const pidProfile_t *pidProfile, int axis, float setpoint) {
-    if (!pidProfile->auto_tune) {
+float autoTune(const pidProfile_t *pidProfileCurrent, int axis, float setpoint) {
+    if (pidRuntime.zeroThrottleItermReset) {
+        pidRuntime.autoTune.setpointOscilate[axis] = 0.0f;
+        pidRuntime.autoTune.averageError[axis] = 0.0f;
+        pidRuntime.autoTune.previousError[axis] = 0.0f;
+        pidRuntime.autoTune.processAutoTune[axis] = 0;
+        pidRuntime.autoTune.numberOscilations[axis] = 0;
+        pidRuntime.autoTune.applyTune[axis] = 0;
+        pidRuntime.autoTune.pSign[axis] = 1;
+        pidRuntime.autoTune.iSign[axis] = 1;
+        pidRuntime.autoTune.dSign[axis] = 1;
+        //pidRuntime.autoTune.emuBoostSign[axis] = 1;
+        //pidRuntime.autoTune.dBoostSign[axis] = 1;
         return setpoint;
     }
 
     if (axis != FD_YAW) {
-        pidRuntime.autoTune.setpointOscilate[axis] += pidProfile->auto_tune_time * pidRuntime.dT;
+        pidRuntime.autoTune.setpointOscilate[axis] += pidProfileCurrent->auto_tune_time * pidRuntime.dT;
     } else {
-        pidRuntime.autoTune.setpointOscilate[axis] += pidProfile->auto_tune_time_yaw * pidRuntime.dT;
+        pidRuntime.autoTune.setpointOscilate[axis] += pidProfileCurrent->auto_tune_time_yaw * pidRuntime.dT;
     }
+
     if (fabsf(pidRuntime.autoTune.setpointOscilate[axis]) > (2 * M_PIf)) {
         pidRuntime.autoTune.setpointOscilate[axis] -= (2 * M_PIf);
+        pidRuntime.autoTune.numberOscilations[axis]++;
+        pidRuntime.autoTune.applyTune[axis] = 1;
     }
-    return setpoint += (pidProfile->auto_tune_oscilation) * (sin_approx(pidRuntime.autoTune.setpointOscilate[axis]));
+
+    setpoint += (pidProfileCurrent->auto_tune_oscilation) * (sin_approx(pidRuntime.autoTune.setpointOscilate[axis]));
+    float errorAbs = fabsf(setpoint - gyro.gyroADCf[axis]);
+    pidRuntime.autoTune.averageError[axis] += errorAbs;
+
+  if (pidRuntime.autoTune.applyTune[axis]) {
+    pidProfile_t *pidProfile = pidProfilesMutable(getCurrentPidProfileIndex());
+    switch (pidRuntime.autoTune.processAutoTune[axis]) {
+        case 0:
+        if (pidRuntime.autoTune.numberOscilations[axis] > 3) {
+            pidRuntime.autoTune.processAutoTune[axis]++;
+            pidRuntime.autoTune.numberOscilations[axis] = 0;
+        }
+        if (pidRuntime.autoTune.averageError[axis] < pidRuntime.autoTune.previousError[axis]) {
+            pidProfile->pid[axis].P += pidRuntime.autoTune.pSign[axis];
+            pidProfile->pid[axis].P = constrainf(pidProfile->pid[axis].P, 1, 200);
+            pidRuntime.pidCoefficient[axis].Kp = PTERM_SCALE * pidProfileCurrent->pid[axis].P;
+        } else {
+            pidRuntime.autoTune.pSign[axis] *= -1;
+            pidProfile->pid[axis].P += pidRuntime.autoTune.pSign[axis];
+            pidProfile->pid[axis].P = constrainf(pidProfile->pid[axis].P, 1, 200);
+            pidRuntime.pidCoefficient[axis].Kp = PTERM_SCALE * pidProfileCurrent->pid[axis].P;
+        }
+        pidRuntime.autoTune.previousError[axis] = pidRuntime.autoTune.averageError[axis];
+        pidRuntime.autoTune.averageError[axis] = 0;
+        break;
+
+        case 1:
+        if (pidRuntime.autoTune.numberOscilations[axis] > 3) {
+            pidRuntime.autoTune.processAutoTune[axis]++;
+            pidRuntime.autoTune.numberOscilations[axis] = 0;
+        }
+        if (pidRuntime.autoTune.averageError[axis] < pidRuntime.autoTune.previousError[axis]) {
+            pidProfile->pid[axis].I += pidRuntime.autoTune.iSign[axis];
+            pidProfile->pid[axis].I = constrainf(pidProfile->pid[axis].I, 1, 200);
+            pidRuntime.pidCoefficient[axis].Ki = ITERM_SCALE * pidProfileCurrent->pid[axis].I;
+        } else {
+            pidRuntime.autoTune.iSign[axis] *= -1;
+            pidProfile->pid[axis].I += pidRuntime.autoTune.iSign[axis];
+            pidProfile->pid[axis].I = constrainf(pidProfile->pid[axis].I, 1, 200);
+            pidRuntime.pidCoefficient[axis].Ki = ITERM_SCALE * pidProfileCurrent->pid[axis].I;
+        }
+        pidRuntime.autoTune.previousError[axis] = pidRuntime.autoTune.averageError[axis];
+        pidRuntime.autoTune.averageError[axis] = 0;
+        break;
+
+        case 2:
+        if (pidRuntime.autoTune.numberOscilations[axis] > 3) {
+            pidRuntime.autoTune.processAutoTune[axis]++;
+            pidRuntime.autoTune.numberOscilations[axis] = 0;
+        }
+        if (pidRuntime.autoTune.averageError[axis] < pidRuntime.autoTune.previousError[axis]) {
+            pidProfile->pid[axis].D += pidRuntime.autoTune.dSign[axis];
+            pidProfile->pid[axis].D = constrainf(pidProfile->pid[axis].D, 1, 200);
+            pidRuntime.pidCoefficient[axis].Kd = DTERM_SCALE * pidProfileCurrent->pid[axis].D;
+        } else {
+            pidRuntime.autoTune.dSign[axis] *= -1;
+            pidProfile->pid[axis].D += pidRuntime.autoTune.dSign[axis];
+            pidProfile->pid[axis].D = constrainf(pidProfile->pid[axis].D, 1, 200);
+            pidRuntime.pidCoefficient[axis].Kd = DTERM_SCALE * pidProfileCurrent->pid[axis].D;
+        }
+        pidRuntime.autoTune.previousError[axis] = pidRuntime.autoTune.averageError[axis];
+        pidRuntime.autoTune.averageError[axis] = 0;
+        break;
+
+        case 3:
+        if (pidRuntime.autoTune.numberOscilations[axis] > 3) {
+            pidRuntime.autoTune.processAutoTune[axis]++;
+            pidRuntime.autoTune.numberOscilations[axis] = 0;
+        }
+        if (pidRuntime.autoTune.averageError[axis] < pidRuntime.autoTune.previousError[axis]) {
+            pidProfile->pid[axis].F += pidRuntime.autoTune.fSign[axis];
+            pidProfile->pid[axis].F = constrainf(pidProfile->pid[axis].F, 1, 1000);
+            pidRuntime.pidCoefficient[axis].Kf = FEEDFORWARD_SCALE * pidProfileCurrent->pid[axis].F;
+        } else {
+            pidRuntime.autoTune.fSign[axis] *= -1;
+            pidProfile->pid[axis].F += pidRuntime.autoTune.fSign[axis];
+            pidProfile->pid[axis].F = constrainf(pidProfile->pid[axis].F, 1, 1000);
+            pidRuntime.pidCoefficient[axis].Kf = FEEDFORWARD_SCALE * pidProfileCurrent->pid[axis].F;
+        }
+        pidRuntime.autoTune.previousError[axis] = pidRuntime.autoTune.averageError[axis];
+        pidRuntime.autoTune.averageError[axis] = 0;
+        break;
+
+        case 4:
+        pidRuntime.autoTune.processAutoTune[axis]++;
+        break;
+
+        case 5:
+        pidRuntime.autoTune.processAutoTune[axis] = 0;
+        break;
+    }
+  }
+  DEBUG_SET(DEBUG_AUTOTUNE, 0, lrintf(pidRuntime.autoTune.averageError[0]));
+  DEBUG_SET(DEBUG_AUTOTUNE, 1, lrintf(pidRuntime.autoTune.previousError[0]));
+  DEBUG_SET(DEBUG_AUTOTUNE, 2, lrintf(pidRuntime.autoTune.averageError[1]));
+  DEBUG_SET(DEBUG_AUTOTUNE, 3, lrintf(pidRuntime.autoTune.previousError[1]));
+
+  pidRuntime.autoTune.applyTune[axis] = 0;
+
+    return setpoint;
 }
 
 // EmuFlight pid controller, which will be maintained in the future with additional features specialised for current (mini) multirotor usage.
@@ -682,8 +797,9 @@ void FAST_CODE pidController(const pidProfile_t *pidProfile)
 #endif
         }
 #endif
-        currentPidSetpoint = autoTune(pidProfile, axis, currentPidSetpoint);
-        DEBUG_SET(DEBUG_AUTOTUNE, axis, lrintf(pidRuntime.autoTune.setpointOscilate[axis] * 1000.0f));
+        if (pidProfile->auto_tune) {
+            currentPidSetpoint = autoTune(pidProfile, axis, currentPidSetpoint);
+        }
 
         // Handle yaw spin recovery - zero the setpoint on yaw to aid in recovery
         // It's not necessary to zero the set points for R/P because the PIDs will be zeroed below

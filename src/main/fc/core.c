@@ -473,6 +473,8 @@ void disarm(flightLogDisarmReason_e reason)
         if (!(getArmingDisableFlags() & (ARMING_DISABLED_RUNAWAY_TAKEOFF | ARMING_DISABLED_CRASH_DETECTED))) {
             beeper(BEEPER_DISARMING);      // emit disarm tone
         }
+
+        saveConfigAndNotify();
     }
 }
 

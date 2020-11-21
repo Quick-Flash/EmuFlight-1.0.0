@@ -84,9 +84,16 @@ typedef struct pidf_s {
 } pidf_t;
 
 typedef struct autoTune_s {
-    uint8_t processAutoTune;
+    uint8_t processAutoTune[XYZ_AXIS_COUNT];
+    uint8_t numberOscilations[XYZ_AXIS_COUNT];
+    bool applyTune[XYZ_AXIS_COUNT];
     float averageError[XYZ_AXIS_COUNT];
+    float previousError[XYZ_AXIS_COUNT];
     float setpointOscilate[XYZ_AXIS_COUNT];
+    int pSign[XYZ_AXIS_COUNT];
+    int iSign[XYZ_AXIS_COUNT];
+    int dSign[XYZ_AXIS_COUNT];
+    int fSign[XYZ_AXIS_COUNT];
 } autoTune_t;
 
 typedef enum {
