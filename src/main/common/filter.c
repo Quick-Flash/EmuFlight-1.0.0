@@ -260,3 +260,17 @@ FAST_CODE float alphaBetaGammaApply(alphaBetaGammaFilter_t *filter, float input)
 
 	return filter->xk;
 } // ABGUpdate
+
+
+// QuickFlash nonlinear filter
+
+void nonLinearQFInit(nonlinearQF_t *filter, float alpha, float dT, float range) {
+
+}
+
+FAST_CODE nonLinearQFApply(nonlinearQF_t *filter, float input) {
+    float change = (input - filter->state) * filter->k;
+    float changeOutput = 1.0f - constrainf(powf(change, filter->power) ,0.0f, 1.0f);
+    filter->state = filter->state + changeOutput * (input - filter->state);
+
+}
