@@ -42,7 +42,9 @@ float getSetpointRate(int axis);
 uint32_t getSetpointRateInt(int axis);
 float getRcDeflection(int axis);
 float getRcDeflectionAbs(int axis);
-float getThrottlePIDAttenuation(void);
+float getThrottlePAttenuation(void);
+float getThrottleIAttenuation(void);
+float getThrottleDAttenuation(void);
 void updateRcCommands(void);
 void resetYawAxis(void);
 void initRcProcessing(void);
@@ -61,4 +63,5 @@ void updateRcRefreshRate(timeUs_t currentTimeUs);
 extern volatile bool isSetpointNew;
 #endif
 uint16_t getCurrentRxRefreshRate(void);
-float rateDynamics(float rcCommand, int axis);
+void updateRcRefreshRate(timeUs_t currentTimeUs);
+float rateDynamics(float rcCommand, int axis, int currentRxRefreshRate);

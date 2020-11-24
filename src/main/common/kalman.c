@@ -34,7 +34,6 @@ static void init_kalman(kalman_t *filter, float q)
     filter->r = 88.0f;                  //seeding R at 88.0f
     filter->p = 30.0f;                  //seeding P at 30.0f
     filter->e = 1.0f;
-    filter->s = gyroConfig()->imuf_sharpness / 250.0f;     //adding the new sharpness :) time to overfilter :O
     filter->w = gyroConfig()->imuf_w;
     filter->inverseN = 1.0f/(float)(filter->w);
 }
@@ -47,7 +46,7 @@ void kalman_init(void)
     init_kalman(&kalmanFilterStateRate[Z],  gyroConfig()->imuf_yaw_q);
 }
 
-static void update_kalman_covariance(float gyroRateData, int axis)
+static FAST_CODE void update_kalman_covariance(float gyroRateData, int axis)
 {
      kalmanFilterStateRate[axis].axisWindow[ kalmanFilterStateRate[axis].windex] = gyroRateData;
      kalmanFilterStateRate[axis].axisSumMean +=  kalmanFilterStateRate[axis].axisWindow[ kalmanFilterStateRate[axis].windex];
@@ -67,7 +66,6 @@ static void update_kalman_covariance(float gyroRateData, int axis)
 
 FAST_CODE float kalman_process(kalman_t* kalmanState, float input, float target)
 {
-  float targetAbs = fabsf(target);
   //project the state ahead using acceleration
   kalmanState->x += (kalmanState->x - kalmanState->lastX);
 
@@ -76,20 +74,12 @@ FAST_CODE float kalman_process(kalman_t* kalmanState, float input, float target)
   //update last state
   kalmanState->lastX = kalmanState->x;
 
-  if (kalmanState->lastX != 0.0f) {
-  // calculate the error and add multiply sharpness boost
-  	float errorMultiplier = fabsf(target - kalmanState->x) * kalmanState->s;
-
-  // give a boost to the setpoint, used to caluclate the kalman q, based on the error and setpoint/gyrodata
-
-  	errorMultiplier = constrainf(errorMultiplier * fabsf(1.0f - (target / kalmanState->lastX)) + 1.0f, 1.0f, 50.0f);
-
-    kalmanState->e = fabsf(1.0f - (((targetAbs + 1.0f) * errorMultiplier) / fabsf(kalmanState->lastX)));
+  if (kalmanState->lastX != 0.0f)
+  {
+      kalmanState->e = fabsf(1.0f - (target / kalmanState->lastX));
   }
-
   //prediction update
   kalmanState->p = kalmanState->p + (kalmanState->q * kalmanState->e);
-
   //measurement update
   kalmanState->k = kalmanState->p / (kalmanState->p + kalmanState->r);
   kalmanState->x += kalmanState->k * (input - kalmanState->x);
@@ -97,12 +87,11 @@ FAST_CODE float kalman_process(kalman_t* kalmanState, float input, float target)
   return kalmanState->x;
 }
 
-
 FAST_CODE float kalman_update(float input, int axis)
 {
-
+ if (gyroConfig()->imuf_w >= 3) {
     update_kalman_covariance(input, axis);
     input = kalman_process(&kalmanFilterStateRate[axis], input, getSetpointRate(axis));
-
+ }
     return input;
 }

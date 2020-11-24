@@ -92,6 +92,8 @@
 #include "drivers/accgyro/accgyro_imuf9001.h"
 #endif
 
+#include "drivers/dshot.h"
+
 static bool configIsDirty; /* someone indicated that the config is modified and it is not yet saved */
 
 static bool rebootRequired = false;  // set if a config change requires a reboot to take effect
@@ -127,7 +129,7 @@ PG_RESET_TEMPLATE(systemConfig_t, systemConfig,
     .cpu_overclock = DEFAULT_CPU_OVERCLOCK,
     .powerOnArmingGraceTime = 5,
     .boardIdentifier = TARGET_BOARD_IDENTIFIER,
-    .hseMhz = SYSTEM_HSE_VALUE,  // Not used for non-F4 targets
+    .hseMhz = SYSTEM_HSE_VALUE,  // Only used for F4 and G4 targets
     .configurationState = CONFIGURATION_STATE_DEFAULTS_BARE,
     .schedulerOptimizeRate = SCHEDULER_OPTIMIZE_RATE_AUTO,
     .enableStickArming = false,
@@ -251,7 +253,7 @@ static void validateAndFixConfig(void)
 #ifdef USE_DYN_LPF
         //Prevent invalid dynamic lowpass
         if (pidProfilesMutable(i)->dyn_lpf_dterm_min_hz > pidProfilesMutable(i)->dyn_lpf_dterm_max_hz) {
-            pidProfilesMutable(i)->dyn_lpf_dterm_min_hz = 0;
+            pidProfilesMutable(i)->dyn_lpf_dterm_max_hz = pidProfilesMutable(i)->dyn_lpf_dterm_min_hz;
         }
 #endif
 
@@ -375,7 +377,7 @@ static void validateAndFixConfig(void)
 #endif
 
     if (
-        featureIsConfigured(FEATURE_3D) || !featureIsConfigured(FEATURE_GPS)
+        featureIsConfigured(FEATURE_3D) || !featureIsConfigured(FEATURE_GPS) || mixerModeIsFixedWing(mixerConfig()->mixerMode)
 #if !defined(USE_GPS) || !defined(USE_GPS_RESCUE)
         || true
 #endif
@@ -617,28 +619,25 @@ static void validateAndFixConfig(void)
             for (int axis = FD_ROLL; axis <= FD_YAW; axis++) {
                 controlRateProfilesMutable(i)->rates[axis] = constrain(controlRateProfilesMutable(i)->rates[axis], 0, ACTUAL_MAX_RATE);
             }
-
-            break;
-        case RATES_TYPE_QUICK:
-            for (int axis = FD_ROLL; axis <= FD_YAW; axis++) {
-                controlRateProfilesMutable(i)->rates[axis] = constrain(controlRateProfilesMutable(i)->rates[axis], 0, QUICK_MAX_RATE);
-            }
         }
     }
+
+#if defined(USE_RX_MSP_OVERRIDE)
+    for (int i = 0; i < MAX_MODE_ACTIVATION_CONDITION_COUNT; i++) {
+        const modeActivationCondition_t *mac = modeActivationConditions(i);
+        if (mac->modeId == BOXMSPOVERRIDE && ((1 << (mac->auxChannelIndex) & (rxConfig()->msp_override_channels_mask)))) {
+            rxConfigMutable()->msp_override_channels_mask &= ~(1 << (mac->auxChannelIndex + NON_AUX_CHANNEL_COUNT));
+        }
+    }
+#endif
+
+    validateAndfixMotorOutputReordering(motorConfigMutable()->dev.motorOutputReordering, MAX_SUPPORTED_MOTORS);
 }
 
 void validateAndFixGyroConfig(void)
 {
-    // Fix gyro filter settings to handle cases where an older configurator was used that
-    // allowed higher cutoff limits from previous firmware versions.
-    adjustFilterLimit(&gyroConfigMutable()->gyro_lowpass_hz, FILTER_FREQUENCY_MAX);
-    adjustFilterLimit(&gyroConfigMutable()->gyro_lowpass2_hz, FILTER_FREQUENCY_MAX);
-    adjustFilterLimit(&gyroConfigMutable()->gyro_soft_notch_hz_1, FILTER_FREQUENCY_MAX);
-    adjustFilterLimit(&gyroConfigMutable()->gyro_soft_notch_cutoff_1, 0);
-    adjustFilterLimit(&gyroConfigMutable()->gyro_soft_notch_hz_2, FILTER_FREQUENCY_MAX);
-    adjustFilterLimit(&gyroConfigMutable()->gyro_soft_notch_cutoff_2, 0);
 #ifdef USE_GYRO_IMUF9001
-    //keeop imuf_rate in sync with the gyro.
+    // keep imuf_rate in sync with the gyro.
     // uint8_t imuf_rate = getImufRateFromGyroSyncDenom(gyroConfigMutable()->gyro_sync_denom);
     // gyroConfigMutable()->imuf_rate = imuf_rate;
     // if (imuf_rate == IMUF_RATE_32K) {
@@ -647,12 +646,16 @@ void validateAndFixGyroConfig(void)
         gyroConfigMutable()->imuf_mode = GTBCM_DEFAULT;
   //  }
 #endif
+
+    // Fix gyro filter settings to handle cases where an older configurator was used that
+    // allowed higher cutoff limits from previous firmware versions.
+    adjustFilterLimit(&gyroConfigMutable()->gyro_lowpass_hz, FILTER_FREQUENCY_MAX);
+    adjustFilterLimit(&gyroConfigMutable()->gyro_soft_notch_hz_1, FILTER_FREQUENCY_MAX);
+    adjustFilterLimit(&gyroConfigMutable()->gyro_soft_notch_cutoff_1, 0);
+
     // Prevent invalid notch cutoff
     if (gyroConfig()->gyro_soft_notch_cutoff_1 >= gyroConfig()->gyro_soft_notch_hz_1) {
         gyroConfigMutable()->gyro_soft_notch_hz_1 = 0;
-    }
-    if (gyroConfig()->gyro_soft_notch_cutoff_2 >= gyroConfig()->gyro_soft_notch_hz_2) {
-        gyroConfigMutable()->gyro_soft_notch_hz_2 = 0;
     }
 #ifdef USE_DYN_LPF
     //Prevent invalid dynamic lowpass filter
@@ -670,18 +673,15 @@ void validateAndFixGyroConfig(void)
         case PWM_TYPE_STANDARD:
                 motorUpdateRestriction = 1.0f / BRUSHLESS_MOTORS_PWM_RATE;
                 break;
-        case PWM_TYPE_ONESHOT125:
-                motorUpdateRestriction = 0.0005f;
-                break;
-        case PWM_TYPE_ONESHOT42:
-                motorUpdateRestriction = 0.0001f;
-                break;
 #ifdef USE_DSHOT
         case PWM_TYPE_DSHOT150:
                 motorUpdateRestriction = 0.000250f;
                 break;
         case PWM_TYPE_DSHOT300:
                 motorUpdateRestriction = 0.0001f;
+                break;
+        case PWM_TYPE_DSHOT600:
+                motorUpdateRestriction = 0.0000625f;
                 break;
 #endif
         default:

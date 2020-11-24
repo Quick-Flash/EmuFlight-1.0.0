@@ -60,6 +60,7 @@ void pgResetFn_rxConfig(rxConfig_t *rxConfig)
         .rcInterpolationChannels = INTERPOLATION_CHANNELS_RPYT,
         .rcInterpolationInterval = 19,
         .fpvCamAngleDegrees = 0,
+        .yawAroundGravity = 0,
         .airModeActivateThreshold = 25,
         .max_aux_channel = DEFAULT_AUX_CHANNEL_COUNT,
         .rc_smoothing_type = RC_SMOOTHING_TYPE_FILTER,
@@ -73,6 +74,8 @@ void pgResetFn_rxConfig(rxConfig_t *rxConfig)
         .srxl2_baud_fast = true,
         .sbus_baud_fast = false,
         .crsf_use_rx_snr = false,
+        .msp_override_channels_mask = 0,
+        .showAlteredRc = 0,
     );
 
 #ifdef RX_CHANNELS_TAER

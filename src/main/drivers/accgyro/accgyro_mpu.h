@@ -187,6 +187,11 @@ enum icm_high_range_accel_fsr_e {
     NUM_ICM_HIGH_RANGE_ACCEL_FSR
 };
 
+enum fchoice_b {
+    FCB_DISABLED = 0x00,
+    FCB_3600_32 = 0x02
+};
+
 typedef enum {
     GYRO_OVERFLOW_NONE = 0x00,
     GYRO_OVERFLOW_X = 0x01,
@@ -210,6 +215,7 @@ typedef enum {
     ICM_42605_SPI,
     BMI_160_SPI,
     BMI_270_SPI,
+    LSM6DSO_SPI,
     L3GD20_SPI,
     IMUF_9001_SPI,
 } mpuSensor_e;
@@ -232,6 +238,7 @@ bool mpuGyroReadSPI(struct gyroDev_s *gyro);
 void mpuPreInit(const struct gyroDeviceConfig_s *config);
 bool mpuDetect(struct gyroDev_s *gyro, const struct gyroDeviceConfig_s *config);
 uint8_t mpuGyroDLPF(struct gyroDev_s *gyro);
+uint8_t mpuGyroFCHOICE(struct gyroDev_s *gyro);
 uint8_t mpuGyroReadRegister(const busDevice_t *bus, uint8_t reg);
 
 struct accDev_s;

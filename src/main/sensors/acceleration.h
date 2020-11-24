@@ -45,7 +45,9 @@ typedef enum {
     ACC_ICM42605,
     ACC_BMI160,
     ACC_BMI270,
+    ACC_LSM6DSO,
     ACC_IMUF9001,
+
     ACC_FAKE
 } accelerationSensor_e;
 
