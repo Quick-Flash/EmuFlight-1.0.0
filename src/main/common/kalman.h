@@ -30,13 +30,14 @@
 
 typedef struct kalman
 {
-    float q;     //process noise covariance
+    float Q00, Q11, Q22, Q33;     //process noise covariance
     float r;     //measurement noise covariance
-    float p;     //estimation error covariance matrix
-    float k;     //kalman gain
-    float x;     //state
-    float lastX; //previous state
+    float P[3][3];     //estimation error covariance matrix
+    float A01, A02, A03;
+    float K0, K1, K2, K3;     //kalman gain
     float e;
+    float ak, vk, xk, jk;
+    float dT, dT2, dT3;
     float axisVar;
     uint16_t windex;
     float axisWindow[MAX_KALMAN_WINDOW_SIZE];

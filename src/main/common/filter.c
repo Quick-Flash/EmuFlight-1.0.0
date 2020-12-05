@@ -45,7 +45,7 @@ FAST_CODE float nullFilterApply(filter_t *filter, float input)
 
 float pt1FilterGain(float f_cut, float dT)
 {
-    float RC = 1 / ( 2 * M_PI_FLOAT * f_cut);
+    float RC = 1 / (2 * M_PI_FLOAT * f_cut);
     return dT / (RC + dT);
 }
 
