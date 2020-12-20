@@ -77,6 +77,7 @@ void pidInitFilters(const pidProfile_t *pidProfile)
         pidRuntime.dtermLowpass2ApplyFn = nullFilterApply;
         pidRuntime.ptermYawLowpassApplyFn = nullFilterApply;
         pidRuntime.dtermABGApplyFn = nullFilterApply;
+        pidRuntime.dtermQFStdApplyFn = nullFilterApply;
         return;
     }
 
@@ -174,6 +175,15 @@ void pidInitFilters(const pidProfile_t *pidProfile)
         pidRuntime.dtermABGApplyFn = (filterApplyFnPtr)alphaBetaGammaApply;
         for (int axis = FD_ROLL; axis <= FD_YAW; axis++) {
             ABGInit(&pidRuntime.dtermABG[axis], pidProfile->dtermAlpha, pidRuntime.dT);
+        }
+    }
+
+    if (pidProfile->dtermQFStdGain == 0) {
+        pidRuntime.dtermQFStdApplyFn = nullFilterApply;
+    } else {
+        pidRuntime.dtermQFStdApplyFn = (filterApplyFnPtr)QFStdApply;
+        for (int axis = FD_ROLL; axis <= FD_YAW; axis++) {
+            QFStdInitFilter(&pidRuntime.dtermQFStd[axis], pidProfile->dtermQFStdSampleSize, pidProfile->dtermQFStdGain, pidProfile->dtermQFStdPrediction);
         }
     }
 

@@ -218,6 +218,17 @@ void gyroInitABG() {
     }
 }
 
+void gyroQFStdInit() {
+    gyro.QFStdApplyFn = nullFilterApply;
+
+    if (gyroConfig()->QFStdGain != 0) {
+        gyro.QFStdApplyFn = (filterApplyFnPtr)QFStdApply;
+        for (int axis = 0; axis < XYZ_AXIS_COUNT; axis++) {
+            QFStdInitFilter(&gyro.QFStd[axis], gyroConfig()->QFStdSampleSize, gyroConfig()->QFStdGain, gyroConfig()->QFStdPrediction);
+        }
+    }
+}
+
 void gyroInitFilters(void)
 {
     uint16_t gyro_lowpass_hz = gyroConfig()->gyro_lowpass_hz;
@@ -247,6 +258,7 @@ void gyroInitFilters(void)
 #endif
     kalman_init();
     gyroInitABG();
+    gyroQFStdInit();
 }
 
 #if defined(USE_GYRO_SLEW_LIMITER)

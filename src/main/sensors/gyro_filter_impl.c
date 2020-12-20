@@ -41,6 +41,16 @@ static FAST_CODE void GYRO_FILTER_FUNCTION_NAME(void)
             }
         }
 #endif
+         if (gyroConfig()->QFStdLocation == 0) {
+             if (axis == 0 || axis == 1) {
+                 DEBUG_SET(DEBUG_QF_STD, axis, lrintf(gyroADCf));
+             }
+             gyroADCf = gyro.QFStdApplyFn((filter_t *)&gyro.QFStd[axis], gyroADCf);
+             if (axis == 0 || axis == 1) {
+                 DEBUG_SET(DEBUG_QF_STD, axis + 2, lrintf(gyroADCf));
+             }
+         }
+
 #ifdef USE_RPM_FILTER
         gyroADCf = rpmFilterGyro(axis, gyroADCf);
 #endif
@@ -76,6 +86,15 @@ static FAST_CODE void GYRO_FILTER_FUNCTION_NAME(void)
             DEBUG_SET(DEBUG_ABG, 3, lrintf(gyroADCf));
         }
 
+        if (gyroConfig()->QFStdLocation == 1) {
+          if (axis == 0 || axis == 1) {
+              DEBUG_SET(DEBUG_QF_STD, axis, lrintf(gyroADCf));
+          }
+          gyroADCf = gyro.QFStdApplyFn((filter_t *)&gyro.QFStd[axis], gyroADCf);
+          if (axis == 0 || axis == 1) {
+              DEBUG_SET(DEBUG_QF_STD, axis + 2, lrintf(gyroADCf));
+          }
+        }
         // DEBUG_GYRO_FILTERED records the scaled, filtered, after all software filtering has been applied.
         GYRO_FILTER_DEBUG_SET(DEBUG_GYRO_FILTERED, axis, lrintf(gyroADCf));
 

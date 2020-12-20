@@ -98,6 +98,9 @@ typedef struct gyro_s {
     filterApplyFnPtr alphaBetaGammaApplyFn;
     alphaBetaGammaFilter_t alphaBetaGamma[XYZ_AXIS_COUNT];
 
+    filterApplyFnPtr QFStdApplyFn;
+    QFStdFilter_t QFStd[XYZ_AXIS_COUNT];
+
 #ifdef USE_GYRO_DATA_ANALYSE
     gyroAnalyseState_t gyroAnalyseState;
     float dynNotchQ;
@@ -160,6 +163,11 @@ typedef struct gyroConfig_s {
 
     uint16_t gyro_lowpass_hz;
     uint16_t alpha;
+
+    uint16_t QFStdSampleSize;  // what range of hz the QFStd filter covers
+    uint8_t QFStdGain;
+    uint8_t QFStdLocation; // pre or post filtered?
+    uint8_t QFStdPrediction; // make curve off of post filtered or pre filtered data
 
     uint16_t gyro_soft_notch_hz_1;
     uint16_t gyro_soft_notch_cutoff_1;

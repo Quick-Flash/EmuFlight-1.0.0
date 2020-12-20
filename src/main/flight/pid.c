@@ -200,6 +200,10 @@ void resetPidProfile(pidProfile_t *pidProfile)
         .dynThr = { 75, 125, 65 },
         .tpa_breakpoint = 1350,
         .dtermAlpha = 750,
+        .dtermQFStdSampleSize = 20,
+        .dtermQFStdGain = 100,
+        .dtermQFStdLocation = 0,
+        .dtermQFStdPrediction = 1,
     );
 }
 
@@ -777,6 +781,9 @@ void FAST_CODE pidController(const pidProfile_t *pidProfile)
                 DEBUG_SET(DEBUG_D_LPF, 2, lrintf(delta));
             }
 
+            if (pidProfile->dtermQFStdLocation == 0) {
+                delta = pidRuntime.dtermQFStdApplyFn((filter_t *) &pidRuntime.dtermQFStd[axis], delta);
+            }
             delta = pidRuntime.dtermNotchApplyFn((filter_t *) &pidRuntime.dtermNotch[axis], delta);
             delta = pidRuntime.dtermLowpassApplyFn((filter_t *) &pidRuntime.dtermLowpass[axis], delta);
             delta = pidRuntime.dtermLowpass2ApplyFn((filter_t *) &pidRuntime.dtermLowpass2[axis], delta);
@@ -791,6 +798,10 @@ void FAST_CODE pidController(const pidProfile_t *pidProfile)
                 DEBUG_SET(DEBUG_D_ABG, 1, lrintf(delta));
             } else if (axis == FD_PITCH) {
                 DEBUG_SET(DEBUG_D_ABG, 3, lrintf(delta));
+            }
+
+            if (pidProfile->dtermQFStdLocation == 1) {
+                delta = pidRuntime.dtermQFStdApplyFn((filter_t *) &pidRuntime.dtermQFStd[axis], delta);
             }
 
             if (axis == FD_ROLL) {

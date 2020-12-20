@@ -55,6 +55,13 @@ typedef struct alphaBetaGammaFilter_s {
     float dT, dT2, dT3;
 } alphaBetaGammaFilter_t;
 
+typedef struct QFStdFilter_s {
+    float y[350];
+    float XS, YS, XYS, XSS, XCS, XQS, XSYS, detInv;
+    float simp1, simp2, simp3, gain, predictionType;
+    int numSamples;
+} QFStdFilter_t;
+
 typedef enum {
     FILTER_PT1 = 0,
     FILTER_BIQUAD,
@@ -93,3 +100,6 @@ float slewFilterApply(slewFilter_t *filter, float input);
 
 void ABGInit(alphaBetaGammaFilter_t *filter, float alpha, float dt);
 float alphaBetaGammaApply(alphaBetaGammaFilter_t *filter, float input);
+
+void QFStdInitFilter(QFStdFilter_t *filter, int sampleSize, float gain, int predict);
+float QFStdApply(QFStdFilter_t *filter, float input);

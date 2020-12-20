@@ -28,6 +28,7 @@
 #include "common/filter.h"
 #include "common/maths.h"
 #include "common/utils.h"
+#include "build/debug.h"
 
 #define M_LN2_FLOAT 0.69314718055994530942f
 #define M_PI_FLOAT  3.14159265358979323846f
@@ -269,3 +270,88 @@ FAST_CODE float alphaBetaGammaApply(alphaBetaGammaFilter_t *filter, float input)
 
 	return filter->xk;
 } // ABGUpdate
+
+void QFStdInitFilter(QFStdFilter_t *filter, int sampleSize, float gain, int predict) {
+  memset(filter, 0, sizeof(QFStdFilter_t));
+  filter->numSamples = sampleSize;
+  if (filter->numSamples > 350) {
+    filter->numSamples = 350;
+  }
+
+  filter->predictionType = predict;
+
+  for (int i = 0; i < filter->numSamples; i++)
+  {
+    filter->XS += i;
+    filter->XSS += i * i;
+    filter->XCS += i * i * i;
+    filter->XQS += i * i * i * i;
+  }
+  float det =  filter->XSS * (filter->XSS * filter->XSS - filter->XCS * filter->XS)
+              - filter->XS * (filter->XCS * filter->XSS - filter->XS * filter->XQS)
+              + filter->numSamples * (filter->XCS * filter->XCS - filter->XQS * filter->XSS);
+  filter->detInv = 1 / det;
+  filter->simp1 = (filter->XSS * filter->XSS - filter->XS * filter->XCS);
+  filter->simp2 = (filter->XCS * filter->XSS - filter->XS * filter->XQS);
+  filter->simp3 = (filter->XCS * filter->XCS - filter->XQS * filter->XSS);
+  filter->gain = gain / 100.0f;
+}
+
+FAST_DATA_ZERO_INIT int count;
+
+FAST_CODE float QFStdApply(QFStdFilter_t *filter, float input) {
+  // find the best fit x^2 curve
+  float dx  =  filter->YS * filter->simp1 - filter->XS * (filter->XYS * filter->XSS - filter->XS * filter->XSYS) + filter->numSamples * (filter->XYS * filter->XCS - filter->XSS * filter->XSYS);
+  float dy  =  filter->XSS * (filter->XYS * filter->XSS - filter->XS * filter->XSYS) - filter->YS * filter->simp2 + filter->numSamples * (filter->XCS * filter->XSYS - filter->XQS * filter->XYS);
+  float dz  =  filter->XSS * (filter->XSS * filter->XSYS - filter->XYS * filter->XCS) - filter->XS * (filter->XCS * filter->XSYS - filter->XYS * filter->XQS) + filter->YS * filter->simp3;
+
+  // tx^2 + ux + v is our best fit curve
+  float t = dx * filter->detInv;
+  float u = dy * filter->detInv;
+  float v = dz * filter->detInv;
+
+
+  // find our standard deviation
+  float errorSqSum;
+  errorSqSum = 0;
+  for (int i = 0; i < filter->numSamples; i++) {
+      // first find the sum of error squared
+      errorSqSum += powf(filter->y[i] - ((t * i * i) + (u * i) + v), 2);
+  }
+        float std = sqrt(errorSqSum / filter->numSamples);
+        // find zscore then scale zscore to find percentile
+        float zScore;
+        if (std != 0) {
+            zScore = fabsf((input - (t - u + v)) / std);
+        } else {
+            zScore = 0;
+        }
+
+        float zToPercent = 0.907f * zScore - 0.288f * (zScore * zScore) + 0.032 * (zScore * zScore * zScore) -0.0188f;
+        zToPercent = filter->gain * zToPercent;
+        zToPercent = constrainf(zToPercent, 0.0f, 1.0f);
+
+        float output = (input * (1.0f - zToPercent)) + ((t - u + v) * (zToPercent));
+
+        memmove(&filter->y[1], &filter->y[0], (filter->numSamples-1) * sizeof(float));
+
+        if (filter->predictionType == 0) {
+            filter->y[0] = input;
+        } else {
+            filter->y[0] = output;
+        }
+
+      // calculate y values for the next loop
+      filter->YS -= filter->y[filter->numSamples - 1];
+      filter->YS += filter->y[0];
+      filter->XYS = 0;
+      filter->XSYS = 0;
+      for (int i = 0; i < filter->numSamples; i++) {
+          // calculate the
+          filter->YS += filter->y[i];
+          filter->XYS += i * filter->y[i];
+          filter->XSYS += i * i * filter->y[i];
+      }
+
+      return output;
+}

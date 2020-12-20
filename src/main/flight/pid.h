@@ -186,6 +186,11 @@ typedef struct pidProfile_s {
     uint16_t tpa_breakpoint;                // Breakpoint where TPA is activated
 
     uint16_t dtermAlpha;
+
+    uint16_t dtermQFStdSampleSize;
+    uint8_t dtermQFStdGain;
+    uint8_t dtermQFStdLocation;
+    uint8_t dtermQFStdPrediction;
 } pidProfile_t;
 
 PG_DECLARE_ARRAY(pidProfile_t, PID_PROFILE_COUNT, pidProfiles);
@@ -237,6 +242,8 @@ typedef struct pidRuntime_s {
     filterApplyFnPtr dtermABGApplyFn;
     alphaBetaGammaFilter_t dtermABG[XYZ_AXIS_COUNT];
     filterApplyFnPtr ptermYawLowpassApplyFn;
+    QFStdFilter_t dtermQFStd[XYZ_AXIS_COUNT];
+    filterApplyFnPtr dtermQFStdApplyFn;
     pt1Filter_t ptermYawLowpass;
     bool antiGravityEnabled;
     uint8_t antiGravityMode;

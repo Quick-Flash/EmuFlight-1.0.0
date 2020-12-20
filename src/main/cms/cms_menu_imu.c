@@ -354,7 +354,7 @@ static const void *cmsx_AngleWriteback(displayPort_t *pDisp, const OSD_Entry *se
 
     pidProfile->pid[PID_LEVEL_LOW].P =    cmsx_P_angle_low;
     pidProfile->pid[PID_LEVEL_LOW].D =    cmsx_D_angle_low;
-    pidProfile->pid[PID_LEVEL_HIGH].P =   cmsx_D_angle_low;
+    pidProfile->pid[PID_LEVEL_HIGH].P =   cmsx_P_angle_high;
     pidProfile->pid[PID_LEVEL_HIGH].D =   cmsx_D_angle_high;
     pidProfile->pid[PID_LEVEL_LOW].F =    cmsx_F_angle;
     pidProfile->levelAngleLimit =         cmsx_angle_limit;
@@ -766,7 +766,15 @@ static uint16_t gyroConfig_imuf_w;
 #endif
 static uint16_t gyroConfig_alpha;
 static uint16_t dterm_alpha;
+static uint16_t stdSize;
+static uint8_t stdGain;
+static uint8_t stdLocation;
+static uint8_t stdPrediction;
 
+static uint16_t dtermStdSize;
+static uint8_t dtermStdGain;
+static uint8_t dtermStdLocation;
+static uint8_t dtermStdPrediction;
 
 static const void *cmsx_menuDynFilt_onEnter(displayPort_t *pDisp)
 {
@@ -798,6 +806,15 @@ static const void *cmsx_menuDynFilt_onEnter(displayPort_t *pDisp)
 #endif
     gyroConfig_alpha          = gyroConfig()->alpha;
     dterm_alpha               = pidProfile->dtermAlpha;
+
+    stdSize                   = gyroConfig()->QFStdSampleSize;
+    stdGain                   = gyroConfig()->QFStdGain;
+    stdLocation               = gyroConfig()->QFStdLocation;
+    stdPrediction             = gyroConfig()->QFStdPrediction;
+    dtermStdSize              = pidProfile->dtermQFStdSampleSize;
+    dtermStdGain              = pidProfile->dtermQFStdGain;
+    dtermStdLocation          = pidProfile->dtermQFStdLocation;
+    dtermStdPrediction        = pidProfile->dtermQFStdPrediction;
     return NULL;
 }
 
@@ -832,12 +849,31 @@ static const void *cmsx_menuDynFilt_onExit(displayPort_t *pDisp, const OSD_Entry
 #endif
     gyroConfigMutable()->alpha          = gyroConfig_alpha;
     pidProfile->dtermAlpha              = dterm_alpha;
+
+    gyroConfigMutable()->QFStdSampleSize       = stdSize;
+    gyroConfigMutable()->QFStdGain             = stdGain;
+    gyroConfigMutable()->QFStdLocation         = stdLocation;
+    gyroConfigMutable()->QFStdPrediction       = stdPrediction;
+    pidProfile->dtermQFStdSampleSize    = dtermStdSize;
+    pidProfile->dtermQFStdGain          = dtermStdGain;
+    pidProfile->dtermQFStdLocation      = dtermStdLocation;
+    pidProfile->dtermQFStdPrediction    = dtermStdPrediction;
     return NULL;
 }
 
 static const OSD_Entry cmsx_menuDynFiltEntries[] =
 {
     { "-- DYN FILT --", OME_Label, NULL, NULL, 0 },
+
+    { "QF STD SIZE",     OME_UINT16, NULL, &(OSD_UINT16_t) { &stdSize,       3, 350, 1 }, 0 },
+    { "QF STD GAIN",     OME_UINT8, NULL, &(OSD_UINT8_t) { &stdGain,         0, 200, 1 }, 0 },
+    { "QF STD LOC",      OME_UINT8, NULL, &(OSD_UINT8_t) { &stdLocation,     0, 1, 1 }, 0 },
+    { "QF STD PRD",      OME_UINT8, NULL, &(OSD_UINT8_t) { &stdPrediction,     0, 1, 1 }, 0 },
+
+    { "D QF STD SIZE",     OME_UINT16, NULL, &(OSD_UINT16_t) { &dtermStdSize,       3, 350, 1 }, 0 },
+    { "D QF STD GAIN",     OME_UINT8, NULL, &(OSD_UINT8_t) { &dtermStdGain,         0, 200, 1 }, 0 },
+    { "D QF STD LOC",      OME_UINT8, NULL, &(OSD_UINT8_t) { &dtermStdLocation,     0, 1, 1 }, 0 },
+    { "D QF STD PRD",      OME_UINT8, NULL, &(OSD_UINT8_t) { &dtermStdPrediction,     0, 1, 1 }, 0 },
 
     { "ALPHA",           OME_UINT16, NULL, &(OSD_UINT16_t) { &gyroConfig_alpha,       0, 1000, 1 }, 0 },
     { "DTERM ALPHA",     OME_UINT16, NULL, &(OSD_UINT16_t) { &dterm_alpha,            0, 1000, 1 }, 0 },
