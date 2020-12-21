@@ -201,7 +201,7 @@ void resetPidProfile(pidProfile_t *pidProfile)
         .tpa_breakpoint = 1350,
         .dtermAlpha = 750,
         .dtermQFStdSampleSize = 20,
-        .dtermQFStdGain = 100,
+        .dtermQFStdGain = 50,
         .dtermQFStdLocation = 0,
         .dtermQFStdPrediction = 1,
     );

@@ -322,7 +322,7 @@ FAST_CODE float QFStdApply(QFStdFilter_t *filter, float input) {
         // find zscore then scale zscore to find percentile
         float zScore;
         if (std != 0) {
-            zScore = fabsf((input - (t - u + v)) / std);
+            zScore = fabsf((input - ((t * filter->numSamples * filter->numSamples) + (u * filter->numSamples) + v)) / std);
         } else {
             zScore = 0;
         }
@@ -331,23 +331,24 @@ FAST_CODE float QFStdApply(QFStdFilter_t *filter, float input) {
         zToPercent = filter->gain * zToPercent;
         zToPercent = constrainf(zToPercent, 0.0f, 1.0f);
 
-        float output = (input * (1.0f - zToPercent)) + ((t - u + v) * (zToPercent));
+        float output = (input * (1.0f - zToPercent)) + ((t * filter->numSamples * filter->numSamples) + (u * filter->numSamples) + v) * (zToPercent);
 
-        memmove(&filter->y[1], &filter->y[0], (filter->numSamples-1) * sizeof(float));
+        //filter->YS -= filter->y[0];
+        memmove(&filter->y[0], &filter->y[1], (filter->numSamples-1) * sizeof(float));
 
         if (filter->predictionType == 0) {
-            filter->y[0] = input;
+            filter->y[filter->numSamples-1] = input;
         } else {
-            filter->y[0] = output;
+            filter->y[filter->numSamples-1] = output;
         }
 
       // calculate y values for the next loop
-      filter->YS -= filter->y[filter->numSamples - 1];
-      filter->YS += filter->y[0];
+      //filter->YS += filter->y[0];
       filter->XYS = 0;
       filter->XSYS = 0;
       for (int i = 0; i < filter->numSamples; i++) {
           // calculate the
+          filter->YS += filter->y[i];
           filter->YS += filter->y[i];
           filter->XYS += i * filter->y[i];
           filter->XSYS += i * i * filter->y[i];

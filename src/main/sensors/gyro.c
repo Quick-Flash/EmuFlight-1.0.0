@@ -113,8 +113,8 @@ void pgResetFn_gyroConfig(gyroConfig_t *gyroConfig)
                                         // overridden and the static lowpass 1 is disabled.
     gyroConfig->alpha = 0;
     gyroConfig->QFStdSampleSize = 20;
-    gyroConfig->QFStdGain = 100;
-    gyroConfig->QFStdLocation = 0;
+    gyroConfig->QFStdGain = 50;
+    gyroConfig->QFStdLocation = 1;
     gyroConfig->QFStdPrediction = 1;
     gyroConfig->gyro_high_fsr = false;
     gyroConfig->gyro_use_32khz = false;
